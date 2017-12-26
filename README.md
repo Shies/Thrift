@@ -1,1 +1,1 @@
-# swoole-rpc-serv
+# Project start from swoole/thrift-rpc-server for Microservices

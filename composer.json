@@ -1,0 +1,21 @@
+{
+  "require": {
+    "php": ">=5.3.10",
+    "j4mie/idiorm": "^1.5"
+  },
+  "autoload": {
+    "classmap": [
+      "app/library",
+      "app/model",
+      "engine"
+    ]
+  },
+  "scripts": {
+    "post-install-cmd": [
+      "composer dump -o"
+    ],
+    "post-update-cmd": [
+      "composer dump -o"
+    ]
+  }
+}

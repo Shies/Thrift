@@ -5,21 +5,21 @@ namespace Swoole\Core;
 class Server
 {
     /**
-     * The Swoole Server Object.
+     * swoole server对象.
      *
      * @var \swoole_server
      */
     protected $serv = null;
 
     /**
-     * The Swoole Server Config.
+     * swoole server配置.
      *
      * @var array
      */
     protected $swoole_config = null;
 
     /**
-     * The Process Name.
+     * 进程名.
      *
      * @var string
      */
@@ -112,9 +112,6 @@ class Server
             'workerExit' => [$this, 'onWorkerExit'],
         ];
         foreach ($support_callback as $name => $callback) {
-            
-            // If has the dependency injection
-            
             if (is_callable(Di::get($name))) {
                 $callback = Di::get($name);
             }

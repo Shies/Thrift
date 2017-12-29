@@ -73,7 +73,9 @@ class Socket extends Thrift\Transport\TFramedTransport
     {
         $out = pack('N', strlen($this->wBuf_));
         $out .= $this->wBuf_;
-        $this->server->send($this->fd, $out);
+        if ($this->server->exist($this->fd)) {
+            $this->server->send($this->fd, $out);
+        }
         $this->wBuf_ = '';
     }
 }

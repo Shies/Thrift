@@ -19,13 +19,25 @@ class Model
         if (!$this->_table) {
             $this->_table = strtolower(get_called_class());
         }
-        try {
-            $this->_instance = \ORM::for_table($this->_table, $this->_database);
-        } catch (Exception $e){
+
+        if (!$this->PDOPing(\ORM::get_db($this->_database))) {
             \ORM::set_db(null, $this->_database);
-            \ORM::get_db($this->_database);
-            file_put_contents("/tmp/aaa-exp", var_export($e,true));
         }
+        $this->_instance = \ORM::for_table($this->_table, $this->_database);
+    }
+
+    private function PDOPing(\PDO $conn)
+    {
+        try {
+            $conn->getAttribute(\PDO::ATTR_SERVER_INFO);
+        } catch (\PDOException $e) {
+            if ($e->getCode() == 'HY000') {
+                file_put_contents("/tmp/ping.log", $e->getCode().'---'.$e->getMessage());
+            }
+            return 0;
+        }
+
+        return $conn;
     }
 
     public function __get($key)
@@ -41,32 +53,15 @@ class Model
     public function __call($method, $args)
     {
         if ($this->_instance && method_exists($this->_instance, $method)) {
-            try {
-                return call_user_func_array(array($this->_instance, $method), $args);
-            } catch (Exception $e) {
-                if (1) {
-                    // 如果mysql gone away，自动重连
-                    file_put_contents("/tmp/aaa-exp", var_export($e,true));
-                    \ORM::set_db(null, $this->_database);
-                    \ORM::get_db($this->_database);
-                    return call_user_func_array(array($this->_instance, $method), $args);
-                }
-                throw new Exception($e->getMessage(), $e->getCode());
-            }
-        } else {
-            return false;
+            return call_user_func_array(array($this->_instance, $method), $args);
         }
+
+        return false;
     }
 
     public function clean()
     {
-        try {
-            $this->_instance = \ORM::for_table($this->_table, $this->_database);
-        } catch (Exception $e){
-            \ORM::set_db(null, $this->_database);
-            \ORM::get_db($this->_database);
-            file_put_contents("/tmp/aaa-exp", var_export($e,true));
-        }
+        $this->_instance = \ORM::for_table($this->_table, $this->_database);
         return $this;
     }
 }

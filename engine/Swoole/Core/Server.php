@@ -63,9 +63,6 @@ class Server
         $prefix = $this->name ? $this->name.': ' : '';
         \swoole_set_process_name($prefix.'rpc worker');
         Logger::init("/tmp/{$this->name}-{$worker_id}.log");
-
-        \ORM::set_db(null, 'default');
-        \ORM::get_db('default');
     }
 
     public function onReceive($serv, $fd, $from_id, $data)

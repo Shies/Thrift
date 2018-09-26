@@ -1,4 +1,10 @@
 {
+  "repositories": {
+    "packagist": {
+      "type": "composer",
+      "url": "https://packagist.phpcomposer.com"
+    }
+  },
   "require": {
     "php": ">=5.3.10",
     "j4mie/idiorm": "^1.5"

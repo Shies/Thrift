@@ -18,10 +18,15 @@ use Thrift\Exception\TApplicationException;
 
 interface AuthorityServiceIf {
   /**
-   * @param int $uid
-   * @return \Authority\UserAuthRet
+   * @param \Authority\Rule $rule
+   * @return \Authority\CommonRet
    */
-  public function getAuth($uid);
+  public function addRule(\Authority\Rule $rule);
+  /**
+   * @param int $rule_id
+   * @return \Authority\CommonRet
+   */
+  public function rmRule($rule_id);
   /**
    * @param \Authority\User $user
    * @return \Authority\CommonRet
@@ -39,21 +44,32 @@ interface AuthorityServiceIf {
    */
   public function updateUser($user_id, \Authority\User $user);
   /**
-   * @param int $user_id
-   * @return \Authority\User
-   */
-  public function getUserById($user_id);
-  /**
    * @param string $username
    * @return \Authority\User
    */
   public function getUserByName($username);
   /**
-   * @param int $page
-   * @param int $pagesize
+   * @param \Authority\Search $search
    * @return \Authority\UserRet
    */
-  public function getUsers($page, $pagesize);
+  public function getUsers(\Authority\Search $search);
+  /**
+   * @param int $user_id
+   * @param string[] $rlat
+   * @return \Authority\UserRlatRet
+   */
+  public function getUserById($user_id, array $rlat);
+  /**
+   * @param int $user_id
+   * @return \Authority\AssignableGroupRet
+   */
+  public function getAssignableGroup($user_id);
+  /**
+   * @param int[] $group_ids
+   * @param int $user_id
+   * @return bool
+   */
+  public function assignGroup2User(array $group_ids, $user_id);
   /**
    * @param \Authority\Point $point
    * @param int $cate_id
@@ -109,12 +125,27 @@ interface AuthorityServiceIf {
    */
   public function updateGroup($group_id, \Authority\Group $group);
   /**
-   * @param int $type
-   * @param int $page
-   * @param int $pagesize
+   * @param \Authority\Search $search
    * @return \Authority\GroupRet
    */
-  public function getGroups($type, $page, $pagesize);
+  public function getGroups(\Authority\Search $search);
+  /**
+   * @param int $group_id
+   * @param string[] $rlat
+   * @return \Authority\GroupRlatRet
+   */
+  public function getGroupById($group_id, array $rlat);
+  /**
+   * @param int $group_id
+   * @return \Authority\AssignablePointRet
+   */
+  public function getAssignablePoint($group_id);
+  /**
+   * @param int[] $points
+   * @param int $group_id
+   * @return \Authority\CommonRet
+   */
+  public function assignPoint2Group(array $points, $group_id);
   /**
    * @param int $parent
    * @param int $child
@@ -128,32 +159,59 @@ interface AuthorityServiceIf {
    */
   public function rmRelation($parent, $child);
   /**
-   * @param int $uid
-   * @return \Authority\AssignableGroupRet
+   * @param \Authority\ResourceAttr $resource_attr
+   * @return \Authority\CommonRet
    */
-  public function getAssignableGroup($uid);
+  public function addResourceAttr(\Authority\ResourceAttr $resource_attr);
   /**
-   * @param int $group_id
-   * @return \Authority\GroupPointRet
+   * @param int $resource_attr_id
+   * @return \Authority\CommonRet
    */
-  public function getGroupPointById($group_id);
+  public function rmResourceAttr($resource_attr_id);
   /**
-   * @param int $group_id
-   * @return \Authority\AssignablePointRet
+   * @param int $resource_attr_id
+   * @param \Authority\ResourceAttr $resource_attr
+   * @return \Authority\CommonRet
    */
-  public function getAssignablePoint($group_id);
+  public function updateResourceAttr($resource_attr_id, \Authority\ResourceAttr $resource_attr);
   /**
-   * @param int[] $points
-   * @param int $group_id
-   * @return bool
+   * @param \Authority\Search $search
+   * @return \Authority\ResourceAttrRet
    */
-  public function assignPoint2Group(array $points, $group_id);
+  public function getResourceAttrs(\Authority\Search $search);
   /**
-   * @param int[] $group_ids
+   * @param \Authority\Role $role
+   * @return \Authority\CommonRet
+   */
+  public function addRole(\Authority\Role $role);
+  /**
+   * @param int $role_id
+   * @return \Authority\CommonRet
+   */
+  public function rmRole($role_id);
+  /**
+   * @param int $role_id
+   * @param \Authority\Role $role
+   * @return \Authority\CommonRet
+   */
+  public function updateRole($role_id, \Authority\Role $role);
+  /**
+   * @param \Authority\Search $search
+   * @return \Authority\RoleRet
+   */
+  public function getRoles(\Authority\Search $search);
+  /**
+   * @param int $role_id
    * @param int $user_id
-   * @return bool
+   * @return \Authority\CommonRet
    */
-  public function assignGroup2User(array $group_ids, $user_id);
+  public function addRoleMember($role_id, $user_id);
+  /**
+   * @param int $role_id
+   * @param int $user_id
+   * @return \Authority\CommonRet
+   */
+  public function rmRoleMember($role_id, $user_id);
 }
 
 class AuthorityServiceClient implements \Authority\AuthorityServiceIf {
@@ -167,34 +225,34 @@ class AuthorityServiceClient implements \Authority\AuthorityServiceIf {
     $this->output_ = $output ? $output : $input;
   }
 
-  public function getAuth($uid)
+  public function addRule(\Authority\Rule $rule)
   {
-    $this->send_getAuth($uid);
-    return $this->recv_getAuth();
+    $this->send_addRule($rule);
+    return $this->recv_addRule();
   }
 
-  public function send_getAuth($uid)
+  public function send_addRule(\Authority\Rule $rule)
   {
-    $args = new \Authority\AuthorityService_getAuth_args();
-    $args->uid = $uid;
+    $args = new \Authority\AuthorityService_addRule_args();
+    $args->rule = $rule;
     $bin_accel = ($this->output_ instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_write_binary');
     if ($bin_accel)
     {
-      thrift_protocol_write_binary($this->output_, 'getAuth', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+      thrift_protocol_write_binary($this->output_, 'addRule', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
     }
     else
     {
-      $this->output_->writeMessageBegin('getAuth', TMessageType::CALL, $this->seqid_);
+      $this->output_->writeMessageBegin('addRule', TMessageType::CALL, $this->seqid_);
       $args->write($this->output_);
       $this->output_->writeMessageEnd();
       $this->output_->getTransport()->flush();
     }
   }
 
-  public function recv_getAuth()
+  public function recv_addRule()
   {
     $bin_accel = ($this->input_ instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_read_binary');
-    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, '\Authority\AuthorityService_getAuth_result', $this->input_->isStrictRead());
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, '\Authority\AuthorityService_addRule_result', $this->input_->isStrictRead());
     else
     {
       $rseqid = 0;
@@ -208,14 +266,65 @@ class AuthorityServiceClient implements \Authority\AuthorityServiceIf {
         $this->input_->readMessageEnd();
         throw $x;
       }
-      $result = new \Authority\AuthorityService_getAuth_result();
+      $result = new \Authority\AuthorityService_addRule_result();
       $result->read($this->input_);
       $this->input_->readMessageEnd();
     }
     if ($result->success !== null) {
       return $result->success;
     }
-    throw new \Exception("getAuth failed: unknown result");
+    throw new \Exception("addRule failed: unknown result");
+  }
+
+  public function rmRule($rule_id)
+  {
+    $this->send_rmRule($rule_id);
+    return $this->recv_rmRule();
+  }
+
+  public function send_rmRule($rule_id)
+  {
+    $args = new \Authority\AuthorityService_rmRule_args();
+    $args->rule_id = $rule_id;
+    $bin_accel = ($this->output_ instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'rmRule', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('rmRule', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_rmRule()
+  {
+    $bin_accel = ($this->input_ instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, '\Authority\AuthorityService_rmRule_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new \Authority\AuthorityService_rmRule_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->success !== null) {
+      return $result->success;
+    }
+    throw new \Exception("rmRule failed: unknown result");
   }
 
   public function addUser(\Authority\User $user)
@@ -372,57 +481,6 @@ class AuthorityServiceClient implements \Authority\AuthorityServiceIf {
     throw new \Exception("updateUser failed: unknown result");
   }
 
-  public function getUserById($user_id)
-  {
-    $this->send_getUserById($user_id);
-    return $this->recv_getUserById();
-  }
-
-  public function send_getUserById($user_id)
-  {
-    $args = new \Authority\AuthorityService_getUserById_args();
-    $args->user_id = $user_id;
-    $bin_accel = ($this->output_ instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_write_binary');
-    if ($bin_accel)
-    {
-      thrift_protocol_write_binary($this->output_, 'getUserById', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
-    }
-    else
-    {
-      $this->output_->writeMessageBegin('getUserById', TMessageType::CALL, $this->seqid_);
-      $args->write($this->output_);
-      $this->output_->writeMessageEnd();
-      $this->output_->getTransport()->flush();
-    }
-  }
-
-  public function recv_getUserById()
-  {
-    $bin_accel = ($this->input_ instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_read_binary');
-    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, '\Authority\AuthorityService_getUserById_result', $this->input_->isStrictRead());
-    else
-    {
-      $rseqid = 0;
-      $fname = null;
-      $mtype = 0;
-
-      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
-      if ($mtype == TMessageType::EXCEPTION) {
-        $x = new TApplicationException();
-        $x->read($this->input_);
-        $this->input_->readMessageEnd();
-        throw $x;
-      }
-      $result = new \Authority\AuthorityService_getUserById_result();
-      $result->read($this->input_);
-      $this->input_->readMessageEnd();
-    }
-    if ($result->success !== null) {
-      return $result->success;
-    }
-    throw new \Exception("getUserById failed: unknown result");
-  }
-
   public function getUserByName($username)
   {
     $this->send_getUserByName($username);
@@ -474,17 +532,16 @@ class AuthorityServiceClient implements \Authority\AuthorityServiceIf {
     throw new \Exception("getUserByName failed: unknown result");
   }
 
-  public function getUsers($page, $pagesize)
+  public function getUsers(\Authority\Search $search)
   {
-    $this->send_getUsers($page, $pagesize);
+    $this->send_getUsers($search);
     return $this->recv_getUsers();
   }
 
-  public function send_getUsers($page, $pagesize)
+  public function send_getUsers(\Authority\Search $search)
   {
     $args = new \Authority\AuthorityService_getUsers_args();
-    $args->page = $page;
-    $args->pagesize = $pagesize;
+    $args->search = $search;
     $bin_accel = ($this->output_ instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_write_binary');
     if ($bin_accel)
     {
@@ -524,6 +581,161 @@ class AuthorityServiceClient implements \Authority\AuthorityServiceIf {
       return $result->success;
     }
     throw new \Exception("getUsers failed: unknown result");
+  }
+
+  public function getUserById($user_id, array $rlat)
+  {
+    $this->send_getUserById($user_id, $rlat);
+    return $this->recv_getUserById();
+  }
+
+  public function send_getUserById($user_id, array $rlat)
+  {
+    $args = new \Authority\AuthorityService_getUserById_args();
+    $args->user_id = $user_id;
+    $args->rlat = $rlat;
+    $bin_accel = ($this->output_ instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'getUserById', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('getUserById', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_getUserById()
+  {
+    $bin_accel = ($this->input_ instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, '\Authority\AuthorityService_getUserById_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new \Authority\AuthorityService_getUserById_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->success !== null) {
+      return $result->success;
+    }
+    throw new \Exception("getUserById failed: unknown result");
+  }
+
+  public function getAssignableGroup($user_id)
+  {
+    $this->send_getAssignableGroup($user_id);
+    return $this->recv_getAssignableGroup();
+  }
+
+  public function send_getAssignableGroup($user_id)
+  {
+    $args = new \Authority\AuthorityService_getAssignableGroup_args();
+    $args->user_id = $user_id;
+    $bin_accel = ($this->output_ instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'getAssignableGroup', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('getAssignableGroup', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_getAssignableGroup()
+  {
+    $bin_accel = ($this->input_ instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, '\Authority\AuthorityService_getAssignableGroup_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new \Authority\AuthorityService_getAssignableGroup_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->success !== null) {
+      return $result->success;
+    }
+    throw new \Exception("getAssignableGroup failed: unknown result");
+  }
+
+  public function assignGroup2User(array $group_ids, $user_id)
+  {
+    $this->send_assignGroup2User($group_ids, $user_id);
+    return $this->recv_assignGroup2User();
+  }
+
+  public function send_assignGroup2User(array $group_ids, $user_id)
+  {
+    $args = new \Authority\AuthorityService_assignGroup2User_args();
+    $args->group_ids = $group_ids;
+    $args->user_id = $user_id;
+    $bin_accel = ($this->output_ instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'assignGroup2User', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('assignGroup2User', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_assignGroup2User()
+  {
+    $bin_accel = ($this->input_ instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, '\Authority\AuthorityService_assignGroup2User_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new \Authority\AuthorityService_assignGroup2User_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->success !== null) {
+      return $result->success;
+    }
+    throw new \Exception("assignGroup2User failed: unknown result");
   }
 
   public function addPoint(\Authority\Point $point, $cate_id)
@@ -1040,18 +1252,16 @@ class AuthorityServiceClient implements \Authority\AuthorityServiceIf {
     throw new \Exception("updateGroup failed: unknown result");
   }
 
-  public function getGroups($type, $page, $pagesize)
+  public function getGroups(\Authority\Search $search)
   {
-    $this->send_getGroups($type, $page, $pagesize);
+    $this->send_getGroups($search);
     return $this->recv_getGroups();
   }
 
-  public function send_getGroups($type, $page, $pagesize)
+  public function send_getGroups(\Authority\Search $search)
   {
     $args = new \Authority\AuthorityService_getGroups_args();
-    $args->type = $type;
-    $args->page = $page;
-    $args->pagesize = $pagesize;
+    $args->search = $search;
     $bin_accel = ($this->output_ instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_write_binary');
     if ($bin_accel)
     {
@@ -1091,6 +1301,161 @@ class AuthorityServiceClient implements \Authority\AuthorityServiceIf {
       return $result->success;
     }
     throw new \Exception("getGroups failed: unknown result");
+  }
+
+  public function getGroupById($group_id, array $rlat)
+  {
+    $this->send_getGroupById($group_id, $rlat);
+    return $this->recv_getGroupById();
+  }
+
+  public function send_getGroupById($group_id, array $rlat)
+  {
+    $args = new \Authority\AuthorityService_getGroupById_args();
+    $args->group_id = $group_id;
+    $args->rlat = $rlat;
+    $bin_accel = ($this->output_ instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'getGroupById', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('getGroupById', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_getGroupById()
+  {
+    $bin_accel = ($this->input_ instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, '\Authority\AuthorityService_getGroupById_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new \Authority\AuthorityService_getGroupById_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->success !== null) {
+      return $result->success;
+    }
+    throw new \Exception("getGroupById failed: unknown result");
+  }
+
+  public function getAssignablePoint($group_id)
+  {
+    $this->send_getAssignablePoint($group_id);
+    return $this->recv_getAssignablePoint();
+  }
+
+  public function send_getAssignablePoint($group_id)
+  {
+    $args = new \Authority\AuthorityService_getAssignablePoint_args();
+    $args->group_id = $group_id;
+    $bin_accel = ($this->output_ instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'getAssignablePoint', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('getAssignablePoint', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_getAssignablePoint()
+  {
+    $bin_accel = ($this->input_ instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, '\Authority\AuthorityService_getAssignablePoint_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new \Authority\AuthorityService_getAssignablePoint_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->success !== null) {
+      return $result->success;
+    }
+    throw new \Exception("getAssignablePoint failed: unknown result");
+  }
+
+  public function assignPoint2Group(array $points, $group_id)
+  {
+    $this->send_assignPoint2Group($points, $group_id);
+    return $this->recv_assignPoint2Group();
+  }
+
+  public function send_assignPoint2Group(array $points, $group_id)
+  {
+    $args = new \Authority\AuthorityService_assignPoint2Group_args();
+    $args->points = $points;
+    $args->group_id = $group_id;
+    $bin_accel = ($this->output_ instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'assignPoint2Group', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('assignPoint2Group', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_assignPoint2Group()
+  {
+    $bin_accel = ($this->input_ instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, '\Authority\AuthorityService_assignPoint2Group_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new \Authority\AuthorityService_assignPoint2Group_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->success !== null) {
+      return $result->success;
+    }
+    throw new \Exception("assignPoint2Group failed: unknown result");
   }
 
   public function addRelation($parent, $child)
@@ -1197,34 +1562,34 @@ class AuthorityServiceClient implements \Authority\AuthorityServiceIf {
     throw new \Exception("rmRelation failed: unknown result");
   }
 
-  public function getAssignableGroup($uid)
+  public function addResourceAttr(\Authority\ResourceAttr $resource_attr)
   {
-    $this->send_getAssignableGroup($uid);
-    return $this->recv_getAssignableGroup();
+    $this->send_addResourceAttr($resource_attr);
+    return $this->recv_addResourceAttr();
   }
 
-  public function send_getAssignableGroup($uid)
+  public function send_addResourceAttr(\Authority\ResourceAttr $resource_attr)
   {
-    $args = new \Authority\AuthorityService_getAssignableGroup_args();
-    $args->uid = $uid;
+    $args = new \Authority\AuthorityService_addResourceAttr_args();
+    $args->resource_attr = $resource_attr;
     $bin_accel = ($this->output_ instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_write_binary');
     if ($bin_accel)
     {
-      thrift_protocol_write_binary($this->output_, 'getAssignableGroup', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+      thrift_protocol_write_binary($this->output_, 'addResourceAttr', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
     }
     else
     {
-      $this->output_->writeMessageBegin('getAssignableGroup', TMessageType::CALL, $this->seqid_);
+      $this->output_->writeMessageBegin('addResourceAttr', TMessageType::CALL, $this->seqid_);
       $args->write($this->output_);
       $this->output_->writeMessageEnd();
       $this->output_->getTransport()->flush();
     }
   }
 
-  public function recv_getAssignableGroup()
+  public function recv_addResourceAttr()
   {
     $bin_accel = ($this->input_ instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_read_binary');
-    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, '\Authority\AuthorityService_getAssignableGroup_result', $this->input_->isStrictRead());
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, '\Authority\AuthorityService_addResourceAttr_result', $this->input_->isStrictRead());
     else
     {
       $rseqid = 0;
@@ -1238,44 +1603,44 @@ class AuthorityServiceClient implements \Authority\AuthorityServiceIf {
         $this->input_->readMessageEnd();
         throw $x;
       }
-      $result = new \Authority\AuthorityService_getAssignableGroup_result();
+      $result = new \Authority\AuthorityService_addResourceAttr_result();
       $result->read($this->input_);
       $this->input_->readMessageEnd();
     }
     if ($result->success !== null) {
       return $result->success;
     }
-    throw new \Exception("getAssignableGroup failed: unknown result");
+    throw new \Exception("addResourceAttr failed: unknown result");
   }
 
-  public function getGroupPointById($group_id)
+  public function rmResourceAttr($resource_attr_id)
   {
-    $this->send_getGroupPointById($group_id);
-    return $this->recv_getGroupPointById();
+    $this->send_rmResourceAttr($resource_attr_id);
+    return $this->recv_rmResourceAttr();
   }
 
-  public function send_getGroupPointById($group_id)
+  public function send_rmResourceAttr($resource_attr_id)
   {
-    $args = new \Authority\AuthorityService_getGroupPointById_args();
-    $args->group_id = $group_id;
+    $args = new \Authority\AuthorityService_rmResourceAttr_args();
+    $args->resource_attr_id = $resource_attr_id;
     $bin_accel = ($this->output_ instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_write_binary');
     if ($bin_accel)
     {
-      thrift_protocol_write_binary($this->output_, 'getGroupPointById', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+      thrift_protocol_write_binary($this->output_, 'rmResourceAttr', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
     }
     else
     {
-      $this->output_->writeMessageBegin('getGroupPointById', TMessageType::CALL, $this->seqid_);
+      $this->output_->writeMessageBegin('rmResourceAttr', TMessageType::CALL, $this->seqid_);
       $args->write($this->output_);
       $this->output_->writeMessageEnd();
       $this->output_->getTransport()->flush();
     }
   }
 
-  public function recv_getGroupPointById()
+  public function recv_rmResourceAttr()
   {
     $bin_accel = ($this->input_ instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_read_binary');
-    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, '\Authority\AuthorityService_getGroupPointById_result', $this->input_->isStrictRead());
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, '\Authority\AuthorityService_rmResourceAttr_result', $this->input_->isStrictRead());
     else
     {
       $rseqid = 0;
@@ -1289,44 +1654,45 @@ class AuthorityServiceClient implements \Authority\AuthorityServiceIf {
         $this->input_->readMessageEnd();
         throw $x;
       }
-      $result = new \Authority\AuthorityService_getGroupPointById_result();
+      $result = new \Authority\AuthorityService_rmResourceAttr_result();
       $result->read($this->input_);
       $this->input_->readMessageEnd();
     }
     if ($result->success !== null) {
       return $result->success;
     }
-    throw new \Exception("getGroupPointById failed: unknown result");
+    throw new \Exception("rmResourceAttr failed: unknown result");
   }
 
-  public function getAssignablePoint($group_id)
+  public function updateResourceAttr($resource_attr_id, \Authority\ResourceAttr $resource_attr)
   {
-    $this->send_getAssignablePoint($group_id);
-    return $this->recv_getAssignablePoint();
+    $this->send_updateResourceAttr($resource_attr_id, $resource_attr);
+    return $this->recv_updateResourceAttr();
   }
 
-  public function send_getAssignablePoint($group_id)
+  public function send_updateResourceAttr($resource_attr_id, \Authority\ResourceAttr $resource_attr)
   {
-    $args = new \Authority\AuthorityService_getAssignablePoint_args();
-    $args->group_id = $group_id;
+    $args = new \Authority\AuthorityService_updateResourceAttr_args();
+    $args->resource_attr_id = $resource_attr_id;
+    $args->resource_attr = $resource_attr;
     $bin_accel = ($this->output_ instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_write_binary');
     if ($bin_accel)
     {
-      thrift_protocol_write_binary($this->output_, 'getAssignablePoint', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+      thrift_protocol_write_binary($this->output_, 'updateResourceAttr', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
     }
     else
     {
-      $this->output_->writeMessageBegin('getAssignablePoint', TMessageType::CALL, $this->seqid_);
+      $this->output_->writeMessageBegin('updateResourceAttr', TMessageType::CALL, $this->seqid_);
       $args->write($this->output_);
       $this->output_->writeMessageEnd();
       $this->output_->getTransport()->flush();
     }
   }
 
-  public function recv_getAssignablePoint()
+  public function recv_updateResourceAttr()
   {
     $bin_accel = ($this->input_ instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_read_binary');
-    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, '\Authority\AuthorityService_getAssignablePoint_result', $this->input_->isStrictRead());
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, '\Authority\AuthorityService_updateResourceAttr_result', $this->input_->isStrictRead());
     else
     {
       $rseqid = 0;
@@ -1340,45 +1706,44 @@ class AuthorityServiceClient implements \Authority\AuthorityServiceIf {
         $this->input_->readMessageEnd();
         throw $x;
       }
-      $result = new \Authority\AuthorityService_getAssignablePoint_result();
+      $result = new \Authority\AuthorityService_updateResourceAttr_result();
       $result->read($this->input_);
       $this->input_->readMessageEnd();
     }
     if ($result->success !== null) {
       return $result->success;
     }
-    throw new \Exception("getAssignablePoint failed: unknown result");
+    throw new \Exception("updateResourceAttr failed: unknown result");
   }
 
-  public function assignPoint2Group(array $points, $group_id)
+  public function getResourceAttrs(\Authority\Search $search)
   {
-    $this->send_assignPoint2Group($points, $group_id);
-    return $this->recv_assignPoint2Group();
+    $this->send_getResourceAttrs($search);
+    return $this->recv_getResourceAttrs();
   }
 
-  public function send_assignPoint2Group(array $points, $group_id)
+  public function send_getResourceAttrs(\Authority\Search $search)
   {
-    $args = new \Authority\AuthorityService_assignPoint2Group_args();
-    $args->points = $points;
-    $args->group_id = $group_id;
+    $args = new \Authority\AuthorityService_getResourceAttrs_args();
+    $args->search = $search;
     $bin_accel = ($this->output_ instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_write_binary');
     if ($bin_accel)
     {
-      thrift_protocol_write_binary($this->output_, 'assignPoint2Group', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+      thrift_protocol_write_binary($this->output_, 'getResourceAttrs', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
     }
     else
     {
-      $this->output_->writeMessageBegin('assignPoint2Group', TMessageType::CALL, $this->seqid_);
+      $this->output_->writeMessageBegin('getResourceAttrs', TMessageType::CALL, $this->seqid_);
       $args->write($this->output_);
       $this->output_->writeMessageEnd();
       $this->output_->getTransport()->flush();
     }
   }
 
-  public function recv_assignPoint2Group()
+  public function recv_getResourceAttrs()
   {
     $bin_accel = ($this->input_ instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_read_binary');
-    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, '\Authority\AuthorityService_assignPoint2Group_result', $this->input_->isStrictRead());
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, '\Authority\AuthorityService_getResourceAttrs_result', $this->input_->isStrictRead());
     else
     {
       $rseqid = 0;
@@ -1392,45 +1757,250 @@ class AuthorityServiceClient implements \Authority\AuthorityServiceIf {
         $this->input_->readMessageEnd();
         throw $x;
       }
-      $result = new \Authority\AuthorityService_assignPoint2Group_result();
+      $result = new \Authority\AuthorityService_getResourceAttrs_result();
       $result->read($this->input_);
       $this->input_->readMessageEnd();
     }
     if ($result->success !== null) {
       return $result->success;
     }
-    throw new \Exception("assignPoint2Group failed: unknown result");
+    throw new \Exception("getResourceAttrs failed: unknown result");
   }
 
-  public function assignGroup2User(array $group_ids, $user_id)
+  public function addRole(\Authority\Role $role)
   {
-    $this->send_assignGroup2User($group_ids, $user_id);
-    return $this->recv_assignGroup2User();
+    $this->send_addRole($role);
+    return $this->recv_addRole();
   }
 
-  public function send_assignGroup2User(array $group_ids, $user_id)
+  public function send_addRole(\Authority\Role $role)
   {
-    $args = new \Authority\AuthorityService_assignGroup2User_args();
-    $args->group_ids = $group_ids;
+    $args = new \Authority\AuthorityService_addRole_args();
+    $args->role = $role;
+    $bin_accel = ($this->output_ instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'addRole', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('addRole', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_addRole()
+  {
+    $bin_accel = ($this->input_ instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, '\Authority\AuthorityService_addRole_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new \Authority\AuthorityService_addRole_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->success !== null) {
+      return $result->success;
+    }
+    throw new \Exception("addRole failed: unknown result");
+  }
+
+  public function rmRole($role_id)
+  {
+    $this->send_rmRole($role_id);
+    return $this->recv_rmRole();
+  }
+
+  public function send_rmRole($role_id)
+  {
+    $args = new \Authority\AuthorityService_rmRole_args();
+    $args->role_id = $role_id;
+    $bin_accel = ($this->output_ instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'rmRole', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('rmRole', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_rmRole()
+  {
+    $bin_accel = ($this->input_ instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, '\Authority\AuthorityService_rmRole_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new \Authority\AuthorityService_rmRole_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->success !== null) {
+      return $result->success;
+    }
+    throw new \Exception("rmRole failed: unknown result");
+  }
+
+  public function updateRole($role_id, \Authority\Role $role)
+  {
+    $this->send_updateRole($role_id, $role);
+    return $this->recv_updateRole();
+  }
+
+  public function send_updateRole($role_id, \Authority\Role $role)
+  {
+    $args = new \Authority\AuthorityService_updateRole_args();
+    $args->role_id = $role_id;
+    $args->role = $role;
+    $bin_accel = ($this->output_ instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'updateRole', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('updateRole', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_updateRole()
+  {
+    $bin_accel = ($this->input_ instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, '\Authority\AuthorityService_updateRole_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new \Authority\AuthorityService_updateRole_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->success !== null) {
+      return $result->success;
+    }
+    throw new \Exception("updateRole failed: unknown result");
+  }
+
+  public function getRoles(\Authority\Search $search)
+  {
+    $this->send_getRoles($search);
+    return $this->recv_getRoles();
+  }
+
+  public function send_getRoles(\Authority\Search $search)
+  {
+    $args = new \Authority\AuthorityService_getRoles_args();
+    $args->search = $search;
+    $bin_accel = ($this->output_ instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'getRoles', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('getRoles', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_getRoles()
+  {
+    $bin_accel = ($this->input_ instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, '\Authority\AuthorityService_getRoles_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new \Authority\AuthorityService_getRoles_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->success !== null) {
+      return $result->success;
+    }
+    throw new \Exception("getRoles failed: unknown result");
+  }
+
+  public function addRoleMember($role_id, $user_id)
+  {
+    $this->send_addRoleMember($role_id, $user_id);
+    return $this->recv_addRoleMember();
+  }
+
+  public function send_addRoleMember($role_id, $user_id)
+  {
+    $args = new \Authority\AuthorityService_addRoleMember_args();
+    $args->role_id = $role_id;
     $args->user_id = $user_id;
     $bin_accel = ($this->output_ instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_write_binary');
     if ($bin_accel)
     {
-      thrift_protocol_write_binary($this->output_, 'assignGroup2User', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+      thrift_protocol_write_binary($this->output_, 'addRoleMember', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
     }
     else
     {
-      $this->output_->writeMessageBegin('assignGroup2User', TMessageType::CALL, $this->seqid_);
+      $this->output_->writeMessageBegin('addRoleMember', TMessageType::CALL, $this->seqid_);
       $args->write($this->output_);
       $this->output_->writeMessageEnd();
       $this->output_->getTransport()->flush();
     }
   }
 
-  public function recv_assignGroup2User()
+  public function recv_addRoleMember()
   {
     $bin_accel = ($this->input_ instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_read_binary');
-    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, '\Authority\AuthorityService_assignGroup2User_result', $this->input_->isStrictRead());
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, '\Authority\AuthorityService_addRoleMember_result', $this->input_->isStrictRead());
     else
     {
       $rseqid = 0;
@@ -1444,46 +2014,99 @@ class AuthorityServiceClient implements \Authority\AuthorityServiceIf {
         $this->input_->readMessageEnd();
         throw $x;
       }
-      $result = new \Authority\AuthorityService_assignGroup2User_result();
+      $result = new \Authority\AuthorityService_addRoleMember_result();
       $result->read($this->input_);
       $this->input_->readMessageEnd();
     }
     if ($result->success !== null) {
       return $result->success;
     }
-    throw new \Exception("assignGroup2User failed: unknown result");
+    throw new \Exception("addRoleMember failed: unknown result");
+  }
+
+  public function rmRoleMember($role_id, $user_id)
+  {
+    $this->send_rmRoleMember($role_id, $user_id);
+    return $this->recv_rmRoleMember();
+  }
+
+  public function send_rmRoleMember($role_id, $user_id)
+  {
+    $args = new \Authority\AuthorityService_rmRoleMember_args();
+    $args->role_id = $role_id;
+    $args->user_id = $user_id;
+    $bin_accel = ($this->output_ instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'rmRoleMember', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('rmRoleMember', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_rmRoleMember()
+  {
+    $bin_accel = ($this->input_ instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, '\Authority\AuthorityService_rmRoleMember_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new \Authority\AuthorityService_rmRoleMember_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->success !== null) {
+      return $result->success;
+    }
+    throw new \Exception("rmRoleMember failed: unknown result");
   }
 
 }
 
 // HELPER FUNCTIONS AND STRUCTURES
 
-class AuthorityService_getAuth_args {
+class AuthorityService_addRule_args {
   static $_TSPEC;
 
   /**
-   * @var int
+   * @var \Authority\Rule
    */
-  public $uid = null;
+  public $rule = null;
 
   public function __construct($vals=null) {
     if (!isset(self::$_TSPEC)) {
       self::$_TSPEC = array(
         1 => array(
-          'var' => 'uid',
-          'type' => TType::I32,
+          'var' => 'rule',
+          'type' => TType::STRUCT,
+          'class' => '\Authority\Rule',
           ),
         );
     }
     if (is_array($vals)) {
-      if (isset($vals['uid'])) {
-        $this->uid = $vals['uid'];
+      if (isset($vals['rule'])) {
+        $this->rule = $vals['rule'];
       }
     }
   }
 
   public function getName() {
-    return 'AuthorityService_getAuth_args';
+    return 'AuthorityService_addRule_args';
   }
 
   public function read($input)
@@ -1502,8 +2125,9 @@ class AuthorityService_getAuth_args {
       switch ($fid)
       {
         case 1:
-          if ($ftype == TType::I32) {
-            $xfer += $input->readI32($this->uid);
+          if ($ftype == TType::STRUCT) {
+            $this->rule = new \Authority\Rule();
+            $xfer += $this->rule->read($input);
           } else {
             $xfer += $input->skip($ftype);
           }
@@ -1520,10 +2144,13 @@ class AuthorityService_getAuth_args {
 
   public function write($output) {
     $xfer = 0;
-    $xfer += $output->writeStructBegin('AuthorityService_getAuth_args');
-    if ($this->uid !== null) {
-      $xfer += $output->writeFieldBegin('uid', TType::I32, 1);
-      $xfer += $output->writeI32($this->uid);
+    $xfer += $output->writeStructBegin('AuthorityService_addRule_args');
+    if ($this->rule !== null) {
+      if (!is_object($this->rule)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('rule', TType::STRUCT, 1);
+      $xfer += $this->rule->write($output);
       $xfer += $output->writeFieldEnd();
     }
     $xfer += $output->writeFieldStop();
@@ -1533,11 +2160,11 @@ class AuthorityService_getAuth_args {
 
 }
 
-class AuthorityService_getAuth_result {
+class AuthorityService_addRule_result {
   static $_TSPEC;
 
   /**
-   * @var \Authority\UserAuthRet
+   * @var \Authority\CommonRet
    */
   public $success = null;
 
@@ -1547,7 +2174,7 @@ class AuthorityService_getAuth_result {
         0 => array(
           'var' => 'success',
           'type' => TType::STRUCT,
-          'class' => '\Authority\UserAuthRet',
+          'class' => '\Authority\CommonRet',
           ),
         );
     }
@@ -1559,7 +2186,7 @@ class AuthorityService_getAuth_result {
   }
 
   public function getName() {
-    return 'AuthorityService_getAuth_result';
+    return 'AuthorityService_addRule_result';
   }
 
   public function read($input)
@@ -1579,7 +2206,7 @@ class AuthorityService_getAuth_result {
       {
         case 0:
           if ($ftype == TType::STRUCT) {
-            $this->success = new \Authority\UserAuthRet();
+            $this->success = new \Authority\CommonRet();
             $xfer += $this->success->read($input);
           } else {
             $xfer += $input->skip($ftype);
@@ -1597,7 +2224,162 @@ class AuthorityService_getAuth_result {
 
   public function write($output) {
     $xfer = 0;
-    $xfer += $output->writeStructBegin('AuthorityService_getAuth_result');
+    $xfer += $output->writeStructBegin('AuthorityService_addRule_result');
+    if ($this->success !== null) {
+      if (!is_object($this->success)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('success', TType::STRUCT, 0);
+      $xfer += $this->success->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class AuthorityService_rmRule_args {
+  static $_TSPEC;
+
+  /**
+   * @var int
+   */
+  public $rule_id = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'rule_id',
+          'type' => TType::I32,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['rule_id'])) {
+        $this->rule_id = $vals['rule_id'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'AuthorityService_rmRule_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I32) {
+            $xfer += $input->readI32($this->rule_id);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('AuthorityService_rmRule_args');
+    if ($this->rule_id !== null) {
+      $xfer += $output->writeFieldBegin('rule_id', TType::I32, 1);
+      $xfer += $output->writeI32($this->rule_id);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class AuthorityService_rmRule_result {
+  static $_TSPEC;
+
+  /**
+   * @var \Authority\CommonRet
+   */
+  public $success = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        0 => array(
+          'var' => 'success',
+          'type' => TType::STRUCT,
+          'class' => '\Authority\CommonRet',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['success'])) {
+        $this->success = $vals['success'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'AuthorityService_rmRule_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 0:
+          if ($ftype == TType::STRUCT) {
+            $this->success = new \Authority\CommonRet();
+            $xfer += $this->success->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('AuthorityService_rmRule_result');
     if ($this->success !== null) {
       if (!is_object($this->success)) {
         throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
@@ -2111,161 +2893,6 @@ class AuthorityService_updateUser_result {
 
 }
 
-class AuthorityService_getUserById_args {
-  static $_TSPEC;
-
-  /**
-   * @var int
-   */
-  public $user_id = null;
-
-  public function __construct($vals=null) {
-    if (!isset(self::$_TSPEC)) {
-      self::$_TSPEC = array(
-        1 => array(
-          'var' => 'user_id',
-          'type' => TType::I32,
-          ),
-        );
-    }
-    if (is_array($vals)) {
-      if (isset($vals['user_id'])) {
-        $this->user_id = $vals['user_id'];
-      }
-    }
-  }
-
-  public function getName() {
-    return 'AuthorityService_getUserById_args';
-  }
-
-  public function read($input)
-  {
-    $xfer = 0;
-    $fname = null;
-    $ftype = 0;
-    $fid = 0;
-    $xfer += $input->readStructBegin($fname);
-    while (true)
-    {
-      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
-      if ($ftype == TType::STOP) {
-        break;
-      }
-      switch ($fid)
-      {
-        case 1:
-          if ($ftype == TType::I32) {
-            $xfer += $input->readI32($this->user_id);
-          } else {
-            $xfer += $input->skip($ftype);
-          }
-          break;
-        default:
-          $xfer += $input->skip($ftype);
-          break;
-      }
-      $xfer += $input->readFieldEnd();
-    }
-    $xfer += $input->readStructEnd();
-    return $xfer;
-  }
-
-  public function write($output) {
-    $xfer = 0;
-    $xfer += $output->writeStructBegin('AuthorityService_getUserById_args');
-    if ($this->user_id !== null) {
-      $xfer += $output->writeFieldBegin('user_id', TType::I32, 1);
-      $xfer += $output->writeI32($this->user_id);
-      $xfer += $output->writeFieldEnd();
-    }
-    $xfer += $output->writeFieldStop();
-    $xfer += $output->writeStructEnd();
-    return $xfer;
-  }
-
-}
-
-class AuthorityService_getUserById_result {
-  static $_TSPEC;
-
-  /**
-   * @var \Authority\User
-   */
-  public $success = null;
-
-  public function __construct($vals=null) {
-    if (!isset(self::$_TSPEC)) {
-      self::$_TSPEC = array(
-        0 => array(
-          'var' => 'success',
-          'type' => TType::STRUCT,
-          'class' => '\Authority\User',
-          ),
-        );
-    }
-    if (is_array($vals)) {
-      if (isset($vals['success'])) {
-        $this->success = $vals['success'];
-      }
-    }
-  }
-
-  public function getName() {
-    return 'AuthorityService_getUserById_result';
-  }
-
-  public function read($input)
-  {
-    $xfer = 0;
-    $fname = null;
-    $ftype = 0;
-    $fid = 0;
-    $xfer += $input->readStructBegin($fname);
-    while (true)
-    {
-      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
-      if ($ftype == TType::STOP) {
-        break;
-      }
-      switch ($fid)
-      {
-        case 0:
-          if ($ftype == TType::STRUCT) {
-            $this->success = new \Authority\User();
-            $xfer += $this->success->read($input);
-          } else {
-            $xfer += $input->skip($ftype);
-          }
-          break;
-        default:
-          $xfer += $input->skip($ftype);
-          break;
-      }
-      $xfer += $input->readFieldEnd();
-    }
-    $xfer += $input->readStructEnd();
-    return $xfer;
-  }
-
-  public function write($output) {
-    $xfer = 0;
-    $xfer += $output->writeStructBegin('AuthorityService_getUserById_result');
-    if ($this->success !== null) {
-      if (!is_object($this->success)) {
-        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
-      }
-      $xfer += $output->writeFieldBegin('success', TType::STRUCT, 0);
-      $xfer += $this->success->write($output);
-      $xfer += $output->writeFieldEnd();
-    }
-    $xfer += $output->writeFieldStop();
-    $xfer += $output->writeStructEnd();
-    return $xfer;
-  }
-
-}
-
 class AuthorityService_getUserByName_args {
   static $_TSPEC;
 
@@ -2425,33 +3052,23 @@ class AuthorityService_getUsers_args {
   static $_TSPEC;
 
   /**
-   * @var int
+   * @var \Authority\Search
    */
-  public $page = null;
-  /**
-   * @var int
-   */
-  public $pagesize = null;
+  public $search = null;
 
   public function __construct($vals=null) {
     if (!isset(self::$_TSPEC)) {
       self::$_TSPEC = array(
         1 => array(
-          'var' => 'page',
-          'type' => TType::I32,
-          ),
-        2 => array(
-          'var' => 'pagesize',
-          'type' => TType::I32,
+          'var' => 'search',
+          'type' => TType::STRUCT,
+          'class' => '\Authority\Search',
           ),
         );
     }
     if (is_array($vals)) {
-      if (isset($vals['page'])) {
-        $this->page = $vals['page'];
-      }
-      if (isset($vals['pagesize'])) {
-        $this->pagesize = $vals['pagesize'];
+      if (isset($vals['search'])) {
+        $this->search = $vals['search'];
       }
     }
   }
@@ -2476,15 +3093,9 @@ class AuthorityService_getUsers_args {
       switch ($fid)
       {
         case 1:
-          if ($ftype == TType::I32) {
-            $xfer += $input->readI32($this->page);
-          } else {
-            $xfer += $input->skip($ftype);
-          }
-          break;
-        case 2:
-          if ($ftype == TType::I32) {
-            $xfer += $input->readI32($this->pagesize);
+          if ($ftype == TType::STRUCT) {
+            $this->search = new \Authority\Search();
+            $xfer += $this->search->read($input);
           } else {
             $xfer += $input->skip($ftype);
           }
@@ -2502,14 +3113,12 @@ class AuthorityService_getUsers_args {
   public function write($output) {
     $xfer = 0;
     $xfer += $output->writeStructBegin('AuthorityService_getUsers_args');
-    if ($this->page !== null) {
-      $xfer += $output->writeFieldBegin('page', TType::I32, 1);
-      $xfer += $output->writeI32($this->page);
-      $xfer += $output->writeFieldEnd();
-    }
-    if ($this->pagesize !== null) {
-      $xfer += $output->writeFieldBegin('pagesize', TType::I32, 2);
-      $xfer += $output->writeI32($this->pagesize);
+    if ($this->search !== null) {
+      if (!is_object($this->search)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('search', TType::STRUCT, 1);
+      $xfer += $this->search->write($output);
       $xfer += $output->writeFieldEnd();
     }
     $xfer += $output->writeFieldStop();
@@ -2590,6 +3199,564 @@ class AuthorityService_getUsers_result {
       }
       $xfer += $output->writeFieldBegin('success', TType::STRUCT, 0);
       $xfer += $this->success->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class AuthorityService_getUserById_args {
+  static $_TSPEC;
+
+  /**
+   * @var int
+   */
+  public $user_id = null;
+  /**
+   * @var string[]
+   */
+  public $rlat = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'user_id',
+          'type' => TType::I32,
+          ),
+        2 => array(
+          'var' => 'rlat',
+          'type' => TType::LST,
+          'etype' => TType::STRING,
+          'elem' => array(
+            'type' => TType::STRING,
+            ),
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['user_id'])) {
+        $this->user_id = $vals['user_id'];
+      }
+      if (isset($vals['rlat'])) {
+        $this->rlat = $vals['rlat'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'AuthorityService_getUserById_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I32) {
+            $xfer += $input->readI32($this->user_id);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 2:
+          if ($ftype == TType::LST) {
+            $this->rlat = array();
+            $_size98 = 0;
+            $_etype101 = 0;
+            $xfer += $input->readListBegin($_etype101, $_size98);
+            for ($_i102 = 0; $_i102 < $_size98; ++$_i102)
+            {
+              $elem103 = null;
+              $xfer += $input->readString($elem103);
+              $this->rlat []= $elem103;
+            }
+            $xfer += $input->readListEnd();
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('AuthorityService_getUserById_args');
+    if ($this->user_id !== null) {
+      $xfer += $output->writeFieldBegin('user_id', TType::I32, 1);
+      $xfer += $output->writeI32($this->user_id);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->rlat !== null) {
+      if (!is_array($this->rlat)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('rlat', TType::LST, 2);
+      {
+        $output->writeListBegin(TType::STRING, count($this->rlat));
+        {
+          foreach ($this->rlat as $iter104)
+          {
+            $xfer += $output->writeString($iter104);
+          }
+        }
+        $output->writeListEnd();
+      }
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class AuthorityService_getUserById_result {
+  static $_TSPEC;
+
+  /**
+   * @var \Authority\UserRlatRet
+   */
+  public $success = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        0 => array(
+          'var' => 'success',
+          'type' => TType::STRUCT,
+          'class' => '\Authority\UserRlatRet',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['success'])) {
+        $this->success = $vals['success'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'AuthorityService_getUserById_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 0:
+          if ($ftype == TType::STRUCT) {
+            $this->success = new \Authority\UserRlatRet();
+            $xfer += $this->success->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('AuthorityService_getUserById_result');
+    if ($this->success !== null) {
+      if (!is_object($this->success)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('success', TType::STRUCT, 0);
+      $xfer += $this->success->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class AuthorityService_getAssignableGroup_args {
+  static $_TSPEC;
+
+  /**
+   * @var int
+   */
+  public $user_id = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'user_id',
+          'type' => TType::I32,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['user_id'])) {
+        $this->user_id = $vals['user_id'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'AuthorityService_getAssignableGroup_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I32) {
+            $xfer += $input->readI32($this->user_id);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('AuthorityService_getAssignableGroup_args');
+    if ($this->user_id !== null) {
+      $xfer += $output->writeFieldBegin('user_id', TType::I32, 1);
+      $xfer += $output->writeI32($this->user_id);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class AuthorityService_getAssignableGroup_result {
+  static $_TSPEC;
+
+  /**
+   * @var \Authority\AssignableGroupRet
+   */
+  public $success = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        0 => array(
+          'var' => 'success',
+          'type' => TType::STRUCT,
+          'class' => '\Authority\AssignableGroupRet',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['success'])) {
+        $this->success = $vals['success'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'AuthorityService_getAssignableGroup_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 0:
+          if ($ftype == TType::STRUCT) {
+            $this->success = new \Authority\AssignableGroupRet();
+            $xfer += $this->success->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('AuthorityService_getAssignableGroup_result');
+    if ($this->success !== null) {
+      if (!is_object($this->success)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('success', TType::STRUCT, 0);
+      $xfer += $this->success->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class AuthorityService_assignGroup2User_args {
+  static $_TSPEC;
+
+  /**
+   * @var int[]
+   */
+  public $group_ids = null;
+  /**
+   * @var int
+   */
+  public $user_id = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'group_ids',
+          'type' => TType::LST,
+          'etype' => TType::I32,
+          'elem' => array(
+            'type' => TType::I32,
+            ),
+          ),
+        2 => array(
+          'var' => 'user_id',
+          'type' => TType::I32,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['group_ids'])) {
+        $this->group_ids = $vals['group_ids'];
+      }
+      if (isset($vals['user_id'])) {
+        $this->user_id = $vals['user_id'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'AuthorityService_assignGroup2User_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::LST) {
+            $this->group_ids = array();
+            $_size105 = 0;
+            $_etype108 = 0;
+            $xfer += $input->readListBegin($_etype108, $_size105);
+            for ($_i109 = 0; $_i109 < $_size105; ++$_i109)
+            {
+              $elem110 = null;
+              $xfer += $input->readI32($elem110);
+              $this->group_ids []= $elem110;
+            }
+            $xfer += $input->readListEnd();
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 2:
+          if ($ftype == TType::I32) {
+            $xfer += $input->readI32($this->user_id);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('AuthorityService_assignGroup2User_args');
+    if ($this->group_ids !== null) {
+      if (!is_array($this->group_ids)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('group_ids', TType::LST, 1);
+      {
+        $output->writeListBegin(TType::I32, count($this->group_ids));
+        {
+          foreach ($this->group_ids as $iter111)
+          {
+            $xfer += $output->writeI32($iter111);
+          }
+        }
+        $output->writeListEnd();
+      }
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->user_id !== null) {
+      $xfer += $output->writeFieldBegin('user_id', TType::I32, 2);
+      $xfer += $output->writeI32($this->user_id);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class AuthorityService_assignGroup2User_result {
+  static $_TSPEC;
+
+  /**
+   * @var bool
+   */
+  public $success = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        0 => array(
+          'var' => 'success',
+          'type' => TType::BOOL,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['success'])) {
+        $this->success = $vals['success'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'AuthorityService_assignGroup2User_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 0:
+          if ($ftype == TType::BOOL) {
+            $xfer += $input->readBool($this->success);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('AuthorityService_assignGroup2User_result');
+    if ($this->success !== null) {
+      $xfer += $output->writeFieldBegin('success', TType::BOOL, 0);
+      $xfer += $output->writeBool($this->success);
       $xfer += $output->writeFieldEnd();
     }
     $xfer += $output->writeFieldStop();
@@ -4273,44 +5440,23 @@ class AuthorityService_getGroups_args {
   static $_TSPEC;
 
   /**
-   * @var int
+   * @var \Authority\Search
    */
-  public $type = null;
-  /**
-   * @var int
-   */
-  public $page = null;
-  /**
-   * @var int
-   */
-  public $pagesize = null;
+  public $search = null;
 
   public function __construct($vals=null) {
     if (!isset(self::$_TSPEC)) {
       self::$_TSPEC = array(
         1 => array(
-          'var' => 'type',
-          'type' => TType::I32,
-          ),
-        2 => array(
-          'var' => 'page',
-          'type' => TType::I32,
-          ),
-        3 => array(
-          'var' => 'pagesize',
-          'type' => TType::I32,
+          'var' => 'search',
+          'type' => TType::STRUCT,
+          'class' => '\Authority\Search',
           ),
         );
     }
     if (is_array($vals)) {
-      if (isset($vals['type'])) {
-        $this->type = $vals['type'];
-      }
-      if (isset($vals['page'])) {
-        $this->page = $vals['page'];
-      }
-      if (isset($vals['pagesize'])) {
-        $this->pagesize = $vals['pagesize'];
+      if (isset($vals['search'])) {
+        $this->search = $vals['search'];
       }
     }
   }
@@ -4335,22 +5481,9 @@ class AuthorityService_getGroups_args {
       switch ($fid)
       {
         case 1:
-          if ($ftype == TType::I32) {
-            $xfer += $input->readI32($this->type);
-          } else {
-            $xfer += $input->skip($ftype);
-          }
-          break;
-        case 2:
-          if ($ftype == TType::I32) {
-            $xfer += $input->readI32($this->page);
-          } else {
-            $xfer += $input->skip($ftype);
-          }
-          break;
-        case 3:
-          if ($ftype == TType::I32) {
-            $xfer += $input->readI32($this->pagesize);
+          if ($ftype == TType::STRUCT) {
+            $this->search = new \Authority\Search();
+            $xfer += $this->search->read($input);
           } else {
             $xfer += $input->skip($ftype);
           }
@@ -4368,19 +5501,12 @@ class AuthorityService_getGroups_args {
   public function write($output) {
     $xfer = 0;
     $xfer += $output->writeStructBegin('AuthorityService_getGroups_args');
-    if ($this->type !== null) {
-      $xfer += $output->writeFieldBegin('type', TType::I32, 1);
-      $xfer += $output->writeI32($this->type);
-      $xfer += $output->writeFieldEnd();
-    }
-    if ($this->page !== null) {
-      $xfer += $output->writeFieldBegin('page', TType::I32, 2);
-      $xfer += $output->writeI32($this->page);
-      $xfer += $output->writeFieldEnd();
-    }
-    if ($this->pagesize !== null) {
-      $xfer += $output->writeFieldBegin('pagesize', TType::I32, 3);
-      $xfer += $output->writeI32($this->pagesize);
+    if ($this->search !== null) {
+      if (!is_object($this->search)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('search', TType::STRUCT, 1);
+      $xfer += $this->search->write($output);
       $xfer += $output->writeFieldEnd();
     }
     $xfer += $output->writeFieldStop();
@@ -4455,6 +5581,569 @@ class AuthorityService_getGroups_result {
   public function write($output) {
     $xfer = 0;
     $xfer += $output->writeStructBegin('AuthorityService_getGroups_result');
+    if ($this->success !== null) {
+      if (!is_object($this->success)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('success', TType::STRUCT, 0);
+      $xfer += $this->success->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class AuthorityService_getGroupById_args {
+  static $_TSPEC;
+
+  /**
+   * @var int
+   */
+  public $group_id = null;
+  /**
+   * @var string[]
+   */
+  public $rlat = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'group_id',
+          'type' => TType::I32,
+          ),
+        2 => array(
+          'var' => 'rlat',
+          'type' => TType::LST,
+          'etype' => TType::STRING,
+          'elem' => array(
+            'type' => TType::STRING,
+            ),
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['group_id'])) {
+        $this->group_id = $vals['group_id'];
+      }
+      if (isset($vals['rlat'])) {
+        $this->rlat = $vals['rlat'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'AuthorityService_getGroupById_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I32) {
+            $xfer += $input->readI32($this->group_id);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 2:
+          if ($ftype == TType::LST) {
+            $this->rlat = array();
+            $_size112 = 0;
+            $_etype115 = 0;
+            $xfer += $input->readListBegin($_etype115, $_size112);
+            for ($_i116 = 0; $_i116 < $_size112; ++$_i116)
+            {
+              $elem117 = null;
+              $xfer += $input->readString($elem117);
+              $this->rlat []= $elem117;
+            }
+            $xfer += $input->readListEnd();
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('AuthorityService_getGroupById_args');
+    if ($this->group_id !== null) {
+      $xfer += $output->writeFieldBegin('group_id', TType::I32, 1);
+      $xfer += $output->writeI32($this->group_id);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->rlat !== null) {
+      if (!is_array($this->rlat)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('rlat', TType::LST, 2);
+      {
+        $output->writeListBegin(TType::STRING, count($this->rlat));
+        {
+          foreach ($this->rlat as $iter118)
+          {
+            $xfer += $output->writeString($iter118);
+          }
+        }
+        $output->writeListEnd();
+      }
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class AuthorityService_getGroupById_result {
+  static $_TSPEC;
+
+  /**
+   * @var \Authority\GroupRlatRet
+   */
+  public $success = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        0 => array(
+          'var' => 'success',
+          'type' => TType::STRUCT,
+          'class' => '\Authority\GroupRlatRet',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['success'])) {
+        $this->success = $vals['success'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'AuthorityService_getGroupById_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 0:
+          if ($ftype == TType::STRUCT) {
+            $this->success = new \Authority\GroupRlatRet();
+            $xfer += $this->success->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('AuthorityService_getGroupById_result');
+    if ($this->success !== null) {
+      if (!is_object($this->success)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('success', TType::STRUCT, 0);
+      $xfer += $this->success->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class AuthorityService_getAssignablePoint_args {
+  static $_TSPEC;
+
+  /**
+   * @var int
+   */
+  public $group_id = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'group_id',
+          'type' => TType::I32,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['group_id'])) {
+        $this->group_id = $vals['group_id'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'AuthorityService_getAssignablePoint_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I32) {
+            $xfer += $input->readI32($this->group_id);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('AuthorityService_getAssignablePoint_args');
+    if ($this->group_id !== null) {
+      $xfer += $output->writeFieldBegin('group_id', TType::I32, 1);
+      $xfer += $output->writeI32($this->group_id);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class AuthorityService_getAssignablePoint_result {
+  static $_TSPEC;
+
+  /**
+   * @var \Authority\AssignablePointRet
+   */
+  public $success = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        0 => array(
+          'var' => 'success',
+          'type' => TType::STRUCT,
+          'class' => '\Authority\AssignablePointRet',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['success'])) {
+        $this->success = $vals['success'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'AuthorityService_getAssignablePoint_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 0:
+          if ($ftype == TType::STRUCT) {
+            $this->success = new \Authority\AssignablePointRet();
+            $xfer += $this->success->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('AuthorityService_getAssignablePoint_result');
+    if ($this->success !== null) {
+      if (!is_object($this->success)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('success', TType::STRUCT, 0);
+      $xfer += $this->success->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class AuthorityService_assignPoint2Group_args {
+  static $_TSPEC;
+
+  /**
+   * @var int[]
+   */
+  public $points = null;
+  /**
+   * @var int
+   */
+  public $group_id = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'points',
+          'type' => TType::LST,
+          'etype' => TType::I32,
+          'elem' => array(
+            'type' => TType::I32,
+            ),
+          ),
+        2 => array(
+          'var' => 'group_id',
+          'type' => TType::I32,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['points'])) {
+        $this->points = $vals['points'];
+      }
+      if (isset($vals['group_id'])) {
+        $this->group_id = $vals['group_id'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'AuthorityService_assignPoint2Group_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::LST) {
+            $this->points = array();
+            $_size119 = 0;
+            $_etype122 = 0;
+            $xfer += $input->readListBegin($_etype122, $_size119);
+            for ($_i123 = 0; $_i123 < $_size119; ++$_i123)
+            {
+              $elem124 = null;
+              $xfer += $input->readI32($elem124);
+              $this->points []= $elem124;
+            }
+            $xfer += $input->readListEnd();
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 2:
+          if ($ftype == TType::I32) {
+            $xfer += $input->readI32($this->group_id);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('AuthorityService_assignPoint2Group_args');
+    if ($this->points !== null) {
+      if (!is_array($this->points)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('points', TType::LST, 1);
+      {
+        $output->writeListBegin(TType::I32, count($this->points));
+        {
+          foreach ($this->points as $iter125)
+          {
+            $xfer += $output->writeI32($iter125);
+          }
+        }
+        $output->writeListEnd();
+      }
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->group_id !== null) {
+      $xfer += $output->writeFieldBegin('group_id', TType::I32, 2);
+      $xfer += $output->writeI32($this->group_id);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class AuthorityService_assignPoint2Group_result {
+  static $_TSPEC;
+
+  /**
+   * @var \Authority\CommonRet
+   */
+  public $success = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        0 => array(
+          'var' => 'success',
+          'type' => TType::STRUCT,
+          'class' => '\Authority\CommonRet',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['success'])) {
+        $this->success = $vals['success'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'AuthorityService_assignPoint2Group_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 0:
+          if ($ftype == TType::STRUCT) {
+            $this->success = new \Authority\CommonRet();
+            $xfer += $this->success->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('AuthorityService_assignPoint2Group_result');
     if ($this->success !== null) {
       if (!is_object($this->success)) {
         throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
@@ -4826,32 +6515,33 @@ class AuthorityService_rmRelation_result {
 
 }
 
-class AuthorityService_getAssignableGroup_args {
+class AuthorityService_addResourceAttr_args {
   static $_TSPEC;
 
   /**
-   * @var int
+   * @var \Authority\ResourceAttr
    */
-  public $uid = null;
+  public $resource_attr = null;
 
   public function __construct($vals=null) {
     if (!isset(self::$_TSPEC)) {
       self::$_TSPEC = array(
         1 => array(
-          'var' => 'uid',
-          'type' => TType::I32,
+          'var' => 'resource_attr',
+          'type' => TType::STRUCT,
+          'class' => '\Authority\ResourceAttr',
           ),
         );
     }
     if (is_array($vals)) {
-      if (isset($vals['uid'])) {
-        $this->uid = $vals['uid'];
+      if (isset($vals['resource_attr'])) {
+        $this->resource_attr = $vals['resource_attr'];
       }
     }
   }
 
   public function getName() {
-    return 'AuthorityService_getAssignableGroup_args';
+    return 'AuthorityService_addResourceAttr_args';
   }
 
   public function read($input)
@@ -4870,8 +6560,9 @@ class AuthorityService_getAssignableGroup_args {
       switch ($fid)
       {
         case 1:
-          if ($ftype == TType::I32) {
-            $xfer += $input->readI32($this->uid);
+          if ($ftype == TType::STRUCT) {
+            $this->resource_attr = new \Authority\ResourceAttr();
+            $xfer += $this->resource_attr->read($input);
           } else {
             $xfer += $input->skip($ftype);
           }
@@ -4888,10 +6579,13 @@ class AuthorityService_getAssignableGroup_args {
 
   public function write($output) {
     $xfer = 0;
-    $xfer += $output->writeStructBegin('AuthorityService_getAssignableGroup_args');
-    if ($this->uid !== null) {
-      $xfer += $output->writeFieldBegin('uid', TType::I32, 1);
-      $xfer += $output->writeI32($this->uid);
+    $xfer += $output->writeStructBegin('AuthorityService_addResourceAttr_args');
+    if ($this->resource_attr !== null) {
+      if (!is_object($this->resource_attr)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('resource_attr', TType::STRUCT, 1);
+      $xfer += $this->resource_attr->write($output);
       $xfer += $output->writeFieldEnd();
     }
     $xfer += $output->writeFieldStop();
@@ -4901,11 +6595,11 @@ class AuthorityService_getAssignableGroup_args {
 
 }
 
-class AuthorityService_getAssignableGroup_result {
+class AuthorityService_addResourceAttr_result {
   static $_TSPEC;
 
   /**
-   * @var \Authority\AssignableGroupRet
+   * @var \Authority\CommonRet
    */
   public $success = null;
 
@@ -4915,7 +6609,7 @@ class AuthorityService_getAssignableGroup_result {
         0 => array(
           'var' => 'success',
           'type' => TType::STRUCT,
-          'class' => '\Authority\AssignableGroupRet',
+          'class' => '\Authority\CommonRet',
           ),
         );
     }
@@ -4927,7 +6621,7 @@ class AuthorityService_getAssignableGroup_result {
   }
 
   public function getName() {
-    return 'AuthorityService_getAssignableGroup_result';
+    return 'AuthorityService_addResourceAttr_result';
   }
 
   public function read($input)
@@ -4947,7 +6641,7 @@ class AuthorityService_getAssignableGroup_result {
       {
         case 0:
           if ($ftype == TType::STRUCT) {
-            $this->success = new \Authority\AssignableGroupRet();
+            $this->success = new \Authority\CommonRet();
             $xfer += $this->success->read($input);
           } else {
             $xfer += $input->skip($ftype);
@@ -4965,7 +6659,7 @@ class AuthorityService_getAssignableGroup_result {
 
   public function write($output) {
     $xfer = 0;
-    $xfer += $output->writeStructBegin('AuthorityService_getAssignableGroup_result');
+    $xfer += $output->writeStructBegin('AuthorityService_addResourceAttr_result');
     if ($this->success !== null) {
       if (!is_object($this->success)) {
         throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
@@ -4981,32 +6675,32 @@ class AuthorityService_getAssignableGroup_result {
 
 }
 
-class AuthorityService_getGroupPointById_args {
+class AuthorityService_rmResourceAttr_args {
   static $_TSPEC;
 
   /**
    * @var int
    */
-  public $group_id = null;
+  public $resource_attr_id = null;
 
   public function __construct($vals=null) {
     if (!isset(self::$_TSPEC)) {
       self::$_TSPEC = array(
         1 => array(
-          'var' => 'group_id',
+          'var' => 'resource_attr_id',
           'type' => TType::I32,
           ),
         );
     }
     if (is_array($vals)) {
-      if (isset($vals['group_id'])) {
-        $this->group_id = $vals['group_id'];
+      if (isset($vals['resource_attr_id'])) {
+        $this->resource_attr_id = $vals['resource_attr_id'];
       }
     }
   }
 
   public function getName() {
-    return 'AuthorityService_getGroupPointById_args';
+    return 'AuthorityService_rmResourceAttr_args';
   }
 
   public function read($input)
@@ -5026,7 +6720,7 @@ class AuthorityService_getGroupPointById_args {
       {
         case 1:
           if ($ftype == TType::I32) {
-            $xfer += $input->readI32($this->group_id);
+            $xfer += $input->readI32($this->resource_attr_id);
           } else {
             $xfer += $input->skip($ftype);
           }
@@ -5043,10 +6737,10 @@ class AuthorityService_getGroupPointById_args {
 
   public function write($output) {
     $xfer = 0;
-    $xfer += $output->writeStructBegin('AuthorityService_getGroupPointById_args');
-    if ($this->group_id !== null) {
-      $xfer += $output->writeFieldBegin('group_id', TType::I32, 1);
-      $xfer += $output->writeI32($this->group_id);
+    $xfer += $output->writeStructBegin('AuthorityService_rmResourceAttr_args');
+    if ($this->resource_attr_id !== null) {
+      $xfer += $output->writeFieldBegin('resource_attr_id', TType::I32, 1);
+      $xfer += $output->writeI32($this->resource_attr_id);
       $xfer += $output->writeFieldEnd();
     }
     $xfer += $output->writeFieldStop();
@@ -5056,11 +6750,11 @@ class AuthorityService_getGroupPointById_args {
 
 }
 
-class AuthorityService_getGroupPointById_result {
+class AuthorityService_rmResourceAttr_result {
   static $_TSPEC;
 
   /**
-   * @var \Authority\GroupPointRet
+   * @var \Authority\CommonRet
    */
   public $success = null;
 
@@ -5070,7 +6764,7 @@ class AuthorityService_getGroupPointById_result {
         0 => array(
           'var' => 'success',
           'type' => TType::STRUCT,
-          'class' => '\Authority\GroupPointRet',
+          'class' => '\Authority\CommonRet',
           ),
         );
     }
@@ -5082,7 +6776,7 @@ class AuthorityService_getGroupPointById_result {
   }
 
   public function getName() {
-    return 'AuthorityService_getGroupPointById_result';
+    return 'AuthorityService_rmResourceAttr_result';
   }
 
   public function read($input)
@@ -5102,7 +6796,7 @@ class AuthorityService_getGroupPointById_result {
       {
         case 0:
           if ($ftype == TType::STRUCT) {
-            $this->success = new \Authority\GroupPointRet();
+            $this->success = new \Authority\CommonRet();
             $xfer += $this->success->read($input);
           } else {
             $xfer += $input->skip($ftype);
@@ -5120,7 +6814,7 @@ class AuthorityService_getGroupPointById_result {
 
   public function write($output) {
     $xfer = 0;
-    $xfer += $output->writeStructBegin('AuthorityService_getGroupPointById_result');
+    $xfer += $output->writeStructBegin('AuthorityService_rmResourceAttr_result');
     if ($this->success !== null) {
       if (!is_object($this->success)) {
         throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
@@ -5136,202 +6830,44 @@ class AuthorityService_getGroupPointById_result {
 
 }
 
-class AuthorityService_getAssignablePoint_args {
+class AuthorityService_updateResourceAttr_args {
   static $_TSPEC;
 
   /**
    * @var int
    */
-  public $group_id = null;
+  public $resource_attr_id = null;
+  /**
+   * @var \Authority\ResourceAttr
+   */
+  public $resource_attr = null;
 
   public function __construct($vals=null) {
     if (!isset(self::$_TSPEC)) {
       self::$_TSPEC = array(
         1 => array(
-          'var' => 'group_id',
+          'var' => 'resource_attr_id',
           'type' => TType::I32,
-          ),
-        );
-    }
-    if (is_array($vals)) {
-      if (isset($vals['group_id'])) {
-        $this->group_id = $vals['group_id'];
-      }
-    }
-  }
-
-  public function getName() {
-    return 'AuthorityService_getAssignablePoint_args';
-  }
-
-  public function read($input)
-  {
-    $xfer = 0;
-    $fname = null;
-    $ftype = 0;
-    $fid = 0;
-    $xfer += $input->readStructBegin($fname);
-    while (true)
-    {
-      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
-      if ($ftype == TType::STOP) {
-        break;
-      }
-      switch ($fid)
-      {
-        case 1:
-          if ($ftype == TType::I32) {
-            $xfer += $input->readI32($this->group_id);
-          } else {
-            $xfer += $input->skip($ftype);
-          }
-          break;
-        default:
-          $xfer += $input->skip($ftype);
-          break;
-      }
-      $xfer += $input->readFieldEnd();
-    }
-    $xfer += $input->readStructEnd();
-    return $xfer;
-  }
-
-  public function write($output) {
-    $xfer = 0;
-    $xfer += $output->writeStructBegin('AuthorityService_getAssignablePoint_args');
-    if ($this->group_id !== null) {
-      $xfer += $output->writeFieldBegin('group_id', TType::I32, 1);
-      $xfer += $output->writeI32($this->group_id);
-      $xfer += $output->writeFieldEnd();
-    }
-    $xfer += $output->writeFieldStop();
-    $xfer += $output->writeStructEnd();
-    return $xfer;
-  }
-
-}
-
-class AuthorityService_getAssignablePoint_result {
-  static $_TSPEC;
-
-  /**
-   * @var \Authority\AssignablePointRet
-   */
-  public $success = null;
-
-  public function __construct($vals=null) {
-    if (!isset(self::$_TSPEC)) {
-      self::$_TSPEC = array(
-        0 => array(
-          'var' => 'success',
-          'type' => TType::STRUCT,
-          'class' => '\Authority\AssignablePointRet',
-          ),
-        );
-    }
-    if (is_array($vals)) {
-      if (isset($vals['success'])) {
-        $this->success = $vals['success'];
-      }
-    }
-  }
-
-  public function getName() {
-    return 'AuthorityService_getAssignablePoint_result';
-  }
-
-  public function read($input)
-  {
-    $xfer = 0;
-    $fname = null;
-    $ftype = 0;
-    $fid = 0;
-    $xfer += $input->readStructBegin($fname);
-    while (true)
-    {
-      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
-      if ($ftype == TType::STOP) {
-        break;
-      }
-      switch ($fid)
-      {
-        case 0:
-          if ($ftype == TType::STRUCT) {
-            $this->success = new \Authority\AssignablePointRet();
-            $xfer += $this->success->read($input);
-          } else {
-            $xfer += $input->skip($ftype);
-          }
-          break;
-        default:
-          $xfer += $input->skip($ftype);
-          break;
-      }
-      $xfer += $input->readFieldEnd();
-    }
-    $xfer += $input->readStructEnd();
-    return $xfer;
-  }
-
-  public function write($output) {
-    $xfer = 0;
-    $xfer += $output->writeStructBegin('AuthorityService_getAssignablePoint_result');
-    if ($this->success !== null) {
-      if (!is_object($this->success)) {
-        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
-      }
-      $xfer += $output->writeFieldBegin('success', TType::STRUCT, 0);
-      $xfer += $this->success->write($output);
-      $xfer += $output->writeFieldEnd();
-    }
-    $xfer += $output->writeFieldStop();
-    $xfer += $output->writeStructEnd();
-    return $xfer;
-  }
-
-}
-
-class AuthorityService_assignPoint2Group_args {
-  static $_TSPEC;
-
-  /**
-   * @var int[]
-   */
-  public $points = null;
-  /**
-   * @var int
-   */
-  public $group_id = null;
-
-  public function __construct($vals=null) {
-    if (!isset(self::$_TSPEC)) {
-      self::$_TSPEC = array(
-        1 => array(
-          'var' => 'points',
-          'type' => TType::LST,
-          'etype' => TType::I32,
-          'elem' => array(
-            'type' => TType::I32,
-            ),
           ),
         2 => array(
-          'var' => 'group_id',
-          'type' => TType::I32,
+          'var' => 'resource_attr',
+          'type' => TType::STRUCT,
+          'class' => '\Authority\ResourceAttr',
           ),
         );
     }
     if (is_array($vals)) {
-      if (isset($vals['points'])) {
-        $this->points = $vals['points'];
+      if (isset($vals['resource_attr_id'])) {
+        $this->resource_attr_id = $vals['resource_attr_id'];
       }
-      if (isset($vals['group_id'])) {
-        $this->group_id = $vals['group_id'];
+      if (isset($vals['resource_attr'])) {
+        $this->resource_attr = $vals['resource_attr'];
       }
     }
   }
 
   public function getName() {
-    return 'AuthorityService_assignPoint2Group_args';
+    return 'AuthorityService_updateResourceAttr_args';
   }
 
   public function read($input)
@@ -5350,25 +6886,16 @@ class AuthorityService_assignPoint2Group_args {
       switch ($fid)
       {
         case 1:
-          if ($ftype == TType::LST) {
-            $this->points = array();
-            $_size70 = 0;
-            $_etype73 = 0;
-            $xfer += $input->readListBegin($_etype73, $_size70);
-            for ($_i74 = 0; $_i74 < $_size70; ++$_i74)
-            {
-              $elem75 = null;
-              $xfer += $input->readI32($elem75);
-              $this->points []= $elem75;
-            }
-            $xfer += $input->readListEnd();
+          if ($ftype == TType::I32) {
+            $xfer += $input->readI32($this->resource_attr_id);
           } else {
             $xfer += $input->skip($ftype);
           }
           break;
         case 2:
-          if ($ftype == TType::I32) {
-            $xfer += $input->readI32($this->group_id);
+          if ($ftype == TType::STRUCT) {
+            $this->resource_attr = new \Authority\ResourceAttr();
+            $xfer += $this->resource_attr->read($input);
           } else {
             $xfer += $input->skip($ftype);
           }
@@ -5385,27 +6912,18 @@ class AuthorityService_assignPoint2Group_args {
 
   public function write($output) {
     $xfer = 0;
-    $xfer += $output->writeStructBegin('AuthorityService_assignPoint2Group_args');
-    if ($this->points !== null) {
-      if (!is_array($this->points)) {
-        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
-      }
-      $xfer += $output->writeFieldBegin('points', TType::LST, 1);
-      {
-        $output->writeListBegin(TType::I32, count($this->points));
-        {
-          foreach ($this->points as $iter76)
-          {
-            $xfer += $output->writeI32($iter76);
-          }
-        }
-        $output->writeListEnd();
-      }
+    $xfer += $output->writeStructBegin('AuthorityService_updateResourceAttr_args');
+    if ($this->resource_attr_id !== null) {
+      $xfer += $output->writeFieldBegin('resource_attr_id', TType::I32, 1);
+      $xfer += $output->writeI32($this->resource_attr_id);
       $xfer += $output->writeFieldEnd();
     }
-    if ($this->group_id !== null) {
-      $xfer += $output->writeFieldBegin('group_id', TType::I32, 2);
-      $xfer += $output->writeI32($this->group_id);
+    if ($this->resource_attr !== null) {
+      if (!is_object($this->resource_attr)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('resource_attr', TType::STRUCT, 2);
+      $xfer += $this->resource_attr->write($output);
       $xfer += $output->writeFieldEnd();
     }
     $xfer += $output->writeFieldStop();
@@ -5415,11 +6933,11 @@ class AuthorityService_assignPoint2Group_args {
 
 }
 
-class AuthorityService_assignPoint2Group_result {
+class AuthorityService_updateResourceAttr_result {
   static $_TSPEC;
 
   /**
-   * @var bool
+   * @var \Authority\CommonRet
    */
   public $success = null;
 
@@ -5428,7 +6946,8 @@ class AuthorityService_assignPoint2Group_result {
       self::$_TSPEC = array(
         0 => array(
           'var' => 'success',
-          'type' => TType::BOOL,
+          'type' => TType::STRUCT,
+          'class' => '\Authority\CommonRet',
           ),
         );
     }
@@ -5440,7 +6959,7 @@ class AuthorityService_assignPoint2Group_result {
   }
 
   public function getName() {
-    return 'AuthorityService_assignPoint2Group_result';
+    return 'AuthorityService_updateResourceAttr_result';
   }
 
   public function read($input)
@@ -5459,8 +6978,9 @@ class AuthorityService_assignPoint2Group_result {
       switch ($fid)
       {
         case 0:
-          if ($ftype == TType::BOOL) {
-            $xfer += $input->readBool($this->success);
+          if ($ftype == TType::STRUCT) {
+            $this->success = new \Authority\CommonRet();
+            $xfer += $this->success->read($input);
           } else {
             $xfer += $input->skip($ftype);
           }
@@ -5477,10 +6997,13 @@ class AuthorityService_assignPoint2Group_result {
 
   public function write($output) {
     $xfer = 0;
-    $xfer += $output->writeStructBegin('AuthorityService_assignPoint2Group_result');
+    $xfer += $output->writeStructBegin('AuthorityService_updateResourceAttr_result');
     if ($this->success !== null) {
-      $xfer += $output->writeFieldBegin('success', TType::BOOL, 0);
-      $xfer += $output->writeBool($this->success);
+      if (!is_object($this->success)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('success', TType::STRUCT, 0);
+      $xfer += $this->success->write($output);
       $xfer += $output->writeFieldEnd();
     }
     $xfer += $output->writeFieldStop();
@@ -5490,13 +7013,831 @@ class AuthorityService_assignPoint2Group_result {
 
 }
 
-class AuthorityService_assignGroup2User_args {
+class AuthorityService_getResourceAttrs_args {
   static $_TSPEC;
 
   /**
-   * @var int[]
+   * @var \Authority\Search
    */
-  public $group_ids = null;
+  public $search = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'search',
+          'type' => TType::STRUCT,
+          'class' => '\Authority\Search',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['search'])) {
+        $this->search = $vals['search'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'AuthorityService_getResourceAttrs_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->search = new \Authority\Search();
+            $xfer += $this->search->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('AuthorityService_getResourceAttrs_args');
+    if ($this->search !== null) {
+      if (!is_object($this->search)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('search', TType::STRUCT, 1);
+      $xfer += $this->search->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class AuthorityService_getResourceAttrs_result {
+  static $_TSPEC;
+
+  /**
+   * @var \Authority\ResourceAttrRet
+   */
+  public $success = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        0 => array(
+          'var' => 'success',
+          'type' => TType::STRUCT,
+          'class' => '\Authority\ResourceAttrRet',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['success'])) {
+        $this->success = $vals['success'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'AuthorityService_getResourceAttrs_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 0:
+          if ($ftype == TType::STRUCT) {
+            $this->success = new \Authority\ResourceAttrRet();
+            $xfer += $this->success->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('AuthorityService_getResourceAttrs_result');
+    if ($this->success !== null) {
+      if (!is_object($this->success)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('success', TType::STRUCT, 0);
+      $xfer += $this->success->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class AuthorityService_addRole_args {
+  static $_TSPEC;
+
+  /**
+   * @var \Authority\Role
+   */
+  public $role = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'role',
+          'type' => TType::STRUCT,
+          'class' => '\Authority\Role',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['role'])) {
+        $this->role = $vals['role'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'AuthorityService_addRole_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->role = new \Authority\Role();
+            $xfer += $this->role->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('AuthorityService_addRole_args');
+    if ($this->role !== null) {
+      if (!is_object($this->role)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('role', TType::STRUCT, 1);
+      $xfer += $this->role->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class AuthorityService_addRole_result {
+  static $_TSPEC;
+
+  /**
+   * @var \Authority\CommonRet
+   */
+  public $success = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        0 => array(
+          'var' => 'success',
+          'type' => TType::STRUCT,
+          'class' => '\Authority\CommonRet',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['success'])) {
+        $this->success = $vals['success'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'AuthorityService_addRole_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 0:
+          if ($ftype == TType::STRUCT) {
+            $this->success = new \Authority\CommonRet();
+            $xfer += $this->success->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('AuthorityService_addRole_result');
+    if ($this->success !== null) {
+      if (!is_object($this->success)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('success', TType::STRUCT, 0);
+      $xfer += $this->success->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class AuthorityService_rmRole_args {
+  static $_TSPEC;
+
+  /**
+   * @var int
+   */
+  public $role_id = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'role_id',
+          'type' => TType::I32,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['role_id'])) {
+        $this->role_id = $vals['role_id'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'AuthorityService_rmRole_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I32) {
+            $xfer += $input->readI32($this->role_id);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('AuthorityService_rmRole_args');
+    if ($this->role_id !== null) {
+      $xfer += $output->writeFieldBegin('role_id', TType::I32, 1);
+      $xfer += $output->writeI32($this->role_id);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class AuthorityService_rmRole_result {
+  static $_TSPEC;
+
+  /**
+   * @var \Authority\CommonRet
+   */
+  public $success = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        0 => array(
+          'var' => 'success',
+          'type' => TType::STRUCT,
+          'class' => '\Authority\CommonRet',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['success'])) {
+        $this->success = $vals['success'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'AuthorityService_rmRole_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 0:
+          if ($ftype == TType::STRUCT) {
+            $this->success = new \Authority\CommonRet();
+            $xfer += $this->success->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('AuthorityService_rmRole_result');
+    if ($this->success !== null) {
+      if (!is_object($this->success)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('success', TType::STRUCT, 0);
+      $xfer += $this->success->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class AuthorityService_updateRole_args {
+  static $_TSPEC;
+
+  /**
+   * @var int
+   */
+  public $role_id = null;
+  /**
+   * @var \Authority\Role
+   */
+  public $role = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'role_id',
+          'type' => TType::I32,
+          ),
+        2 => array(
+          'var' => 'role',
+          'type' => TType::STRUCT,
+          'class' => '\Authority\Role',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['role_id'])) {
+        $this->role_id = $vals['role_id'];
+      }
+      if (isset($vals['role'])) {
+        $this->role = $vals['role'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'AuthorityService_updateRole_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I32) {
+            $xfer += $input->readI32($this->role_id);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 2:
+          if ($ftype == TType::STRUCT) {
+            $this->role = new \Authority\Role();
+            $xfer += $this->role->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('AuthorityService_updateRole_args');
+    if ($this->role_id !== null) {
+      $xfer += $output->writeFieldBegin('role_id', TType::I32, 1);
+      $xfer += $output->writeI32($this->role_id);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->role !== null) {
+      if (!is_object($this->role)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('role', TType::STRUCT, 2);
+      $xfer += $this->role->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class AuthorityService_updateRole_result {
+  static $_TSPEC;
+
+  /**
+   * @var \Authority\CommonRet
+   */
+  public $success = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        0 => array(
+          'var' => 'success',
+          'type' => TType::STRUCT,
+          'class' => '\Authority\CommonRet',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['success'])) {
+        $this->success = $vals['success'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'AuthorityService_updateRole_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 0:
+          if ($ftype == TType::STRUCT) {
+            $this->success = new \Authority\CommonRet();
+            $xfer += $this->success->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('AuthorityService_updateRole_result');
+    if ($this->success !== null) {
+      if (!is_object($this->success)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('success', TType::STRUCT, 0);
+      $xfer += $this->success->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class AuthorityService_getRoles_args {
+  static $_TSPEC;
+
+  /**
+   * @var \Authority\Search
+   */
+  public $search = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'search',
+          'type' => TType::STRUCT,
+          'class' => '\Authority\Search',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['search'])) {
+        $this->search = $vals['search'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'AuthorityService_getRoles_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->search = new \Authority\Search();
+            $xfer += $this->search->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('AuthorityService_getRoles_args');
+    if ($this->search !== null) {
+      if (!is_object($this->search)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('search', TType::STRUCT, 1);
+      $xfer += $this->search->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class AuthorityService_getRoles_result {
+  static $_TSPEC;
+
+  /**
+   * @var \Authority\RoleRet
+   */
+  public $success = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        0 => array(
+          'var' => 'success',
+          'type' => TType::STRUCT,
+          'class' => '\Authority\RoleRet',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['success'])) {
+        $this->success = $vals['success'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'AuthorityService_getRoles_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 0:
+          if ($ftype == TType::STRUCT) {
+            $this->success = new \Authority\RoleRet();
+            $xfer += $this->success->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('AuthorityService_getRoles_result');
+    if ($this->success !== null) {
+      if (!is_object($this->success)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('success', TType::STRUCT, 0);
+      $xfer += $this->success->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class AuthorityService_addRoleMember_args {
+  static $_TSPEC;
+
+  /**
+   * @var int
+   */
+  public $role_id = null;
   /**
    * @var int
    */
@@ -5506,12 +7847,8 @@ class AuthorityService_assignGroup2User_args {
     if (!isset(self::$_TSPEC)) {
       self::$_TSPEC = array(
         1 => array(
-          'var' => 'group_ids',
-          'type' => TType::LST,
-          'etype' => TType::I32,
-          'elem' => array(
-            'type' => TType::I32,
-            ),
+          'var' => 'role_id',
+          'type' => TType::I32,
           ),
         2 => array(
           'var' => 'user_id',
@@ -5520,8 +7857,8 @@ class AuthorityService_assignGroup2User_args {
         );
     }
     if (is_array($vals)) {
-      if (isset($vals['group_ids'])) {
-        $this->group_ids = $vals['group_ids'];
+      if (isset($vals['role_id'])) {
+        $this->role_id = $vals['role_id'];
       }
       if (isset($vals['user_id'])) {
         $this->user_id = $vals['user_id'];
@@ -5530,7 +7867,7 @@ class AuthorityService_assignGroup2User_args {
   }
 
   public function getName() {
-    return 'AuthorityService_assignGroup2User_args';
+    return 'AuthorityService_addRoleMember_args';
   }
 
   public function read($input)
@@ -5549,18 +7886,8 @@ class AuthorityService_assignGroup2User_args {
       switch ($fid)
       {
         case 1:
-          if ($ftype == TType::LST) {
-            $this->group_ids = array();
-            $_size77 = 0;
-            $_etype80 = 0;
-            $xfer += $input->readListBegin($_etype80, $_size77);
-            for ($_i81 = 0; $_i81 < $_size77; ++$_i81)
-            {
-              $elem82 = null;
-              $xfer += $input->readI32($elem82);
-              $this->group_ids []= $elem82;
-            }
-            $xfer += $input->readListEnd();
+          if ($ftype == TType::I32) {
+            $xfer += $input->readI32($this->role_id);
           } else {
             $xfer += $input->skip($ftype);
           }
@@ -5584,22 +7911,10 @@ class AuthorityService_assignGroup2User_args {
 
   public function write($output) {
     $xfer = 0;
-    $xfer += $output->writeStructBegin('AuthorityService_assignGroup2User_args');
-    if ($this->group_ids !== null) {
-      if (!is_array($this->group_ids)) {
-        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
-      }
-      $xfer += $output->writeFieldBegin('group_ids', TType::LST, 1);
-      {
-        $output->writeListBegin(TType::I32, count($this->group_ids));
-        {
-          foreach ($this->group_ids as $iter83)
-          {
-            $xfer += $output->writeI32($iter83);
-          }
-        }
-        $output->writeListEnd();
-      }
+    $xfer += $output->writeStructBegin('AuthorityService_addRoleMember_args');
+    if ($this->role_id !== null) {
+      $xfer += $output->writeFieldBegin('role_id', TType::I32, 1);
+      $xfer += $output->writeI32($this->role_id);
       $xfer += $output->writeFieldEnd();
     }
     if ($this->user_id !== null) {
@@ -5614,11 +7929,11 @@ class AuthorityService_assignGroup2User_args {
 
 }
 
-class AuthorityService_assignGroup2User_result {
+class AuthorityService_addRoleMember_result {
   static $_TSPEC;
 
   /**
-   * @var bool
+   * @var \Authority\CommonRet
    */
   public $success = null;
 
@@ -5627,7 +7942,8 @@ class AuthorityService_assignGroup2User_result {
       self::$_TSPEC = array(
         0 => array(
           'var' => 'success',
-          'type' => TType::BOOL,
+          'type' => TType::STRUCT,
+          'class' => '\Authority\CommonRet',
           ),
         );
     }
@@ -5639,7 +7955,7 @@ class AuthorityService_assignGroup2User_result {
   }
 
   public function getName() {
-    return 'AuthorityService_assignGroup2User_result';
+    return 'AuthorityService_addRoleMember_result';
   }
 
   public function read($input)
@@ -5658,8 +7974,9 @@ class AuthorityService_assignGroup2User_result {
       switch ($fid)
       {
         case 0:
-          if ($ftype == TType::BOOL) {
-            $xfer += $input->readBool($this->success);
+          if ($ftype == TType::STRUCT) {
+            $this->success = new \Authority\CommonRet();
+            $xfer += $this->success->read($input);
           } else {
             $xfer += $input->skip($ftype);
           }
@@ -5676,10 +7993,191 @@ class AuthorityService_assignGroup2User_result {
 
   public function write($output) {
     $xfer = 0;
-    $xfer += $output->writeStructBegin('AuthorityService_assignGroup2User_result');
+    $xfer += $output->writeStructBegin('AuthorityService_addRoleMember_result');
     if ($this->success !== null) {
-      $xfer += $output->writeFieldBegin('success', TType::BOOL, 0);
-      $xfer += $output->writeBool($this->success);
+      if (!is_object($this->success)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('success', TType::STRUCT, 0);
+      $xfer += $this->success->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class AuthorityService_rmRoleMember_args {
+  static $_TSPEC;
+
+  /**
+   * @var int
+   */
+  public $role_id = null;
+  /**
+   * @var int
+   */
+  public $user_id = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'role_id',
+          'type' => TType::I32,
+          ),
+        2 => array(
+          'var' => 'user_id',
+          'type' => TType::I32,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['role_id'])) {
+        $this->role_id = $vals['role_id'];
+      }
+      if (isset($vals['user_id'])) {
+        $this->user_id = $vals['user_id'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'AuthorityService_rmRoleMember_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I32) {
+            $xfer += $input->readI32($this->role_id);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 2:
+          if ($ftype == TType::I32) {
+            $xfer += $input->readI32($this->user_id);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('AuthorityService_rmRoleMember_args');
+    if ($this->role_id !== null) {
+      $xfer += $output->writeFieldBegin('role_id', TType::I32, 1);
+      $xfer += $output->writeI32($this->role_id);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->user_id !== null) {
+      $xfer += $output->writeFieldBegin('user_id', TType::I32, 2);
+      $xfer += $output->writeI32($this->user_id);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class AuthorityService_rmRoleMember_result {
+  static $_TSPEC;
+
+  /**
+   * @var \Authority\CommonRet
+   */
+  public $success = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        0 => array(
+          'var' => 'success',
+          'type' => TType::STRUCT,
+          'class' => '\Authority\CommonRet',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['success'])) {
+        $this->success = $vals['success'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'AuthorityService_rmRoleMember_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 0:
+          if ($ftype == TType::STRUCT) {
+            $this->success = new \Authority\CommonRet();
+            $xfer += $this->success->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('AuthorityService_rmRoleMember_result');
+    if ($this->success !== null) {
+      if (!is_object($this->success)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('success', TType::STRUCT, 0);
+      $xfer += $this->success->write($output);
       $xfer += $output->writeFieldEnd();
     }
     $xfer += $output->writeFieldStop();
@@ -5716,20 +8214,39 @@ class AuthorityServiceProcessor {
     return true;
   }
 
-  protected function process_getAuth($seqid, $input, $output) {
-    $args = new \Authority\AuthorityService_getAuth_args();
+  protected function process_addRule($seqid, $input, $output) {
+    $args = new \Authority\AuthorityService_addRule_args();
     $args->read($input);
     $input->readMessageEnd();
-    $result = new \Authority\AuthorityService_getAuth_result();
-    $result->success = $this->handler_->getAuth($args->uid);
+    $result = new \Authority\AuthorityService_addRule_result();
+    $result->success = $this->handler_->addRule($args->rule);
     $bin_accel = ($output instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_write_binary');
     if ($bin_accel)
     {
-      thrift_protocol_write_binary($output, 'getAuth', TMessageType::REPLY, $result, $seqid, $output->isStrictWrite());
+      thrift_protocol_write_binary($output, 'addRule', TMessageType::REPLY, $result, $seqid, $output->isStrictWrite());
     }
     else
     {
-      $output->writeMessageBegin('getAuth', TMessageType::REPLY, $seqid);
+      $output->writeMessageBegin('addRule', TMessageType::REPLY, $seqid);
+      $result->write($output);
+      $output->writeMessageEnd();
+      $output->getTransport()->flush();
+    }
+  }
+  protected function process_rmRule($seqid, $input, $output) {
+    $args = new \Authority\AuthorityService_rmRule_args();
+    $args->read($input);
+    $input->readMessageEnd();
+    $result = new \Authority\AuthorityService_rmRule_result();
+    $result->success = $this->handler_->rmRule($args->rule_id);
+    $bin_accel = ($output instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($output, 'rmRule', TMessageType::REPLY, $result, $seqid, $output->isStrictWrite());
+    }
+    else
+    {
+      $output->writeMessageBegin('rmRule', TMessageType::REPLY, $seqid);
       $result->write($output);
       $output->writeMessageEnd();
       $output->getTransport()->flush();
@@ -5792,25 +8309,6 @@ class AuthorityServiceProcessor {
       $output->getTransport()->flush();
     }
   }
-  protected function process_getUserById($seqid, $input, $output) {
-    $args = new \Authority\AuthorityService_getUserById_args();
-    $args->read($input);
-    $input->readMessageEnd();
-    $result = new \Authority\AuthorityService_getUserById_result();
-    $result->success = $this->handler_->getUserById($args->user_id);
-    $bin_accel = ($output instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_write_binary');
-    if ($bin_accel)
-    {
-      thrift_protocol_write_binary($output, 'getUserById', TMessageType::REPLY, $result, $seqid, $output->isStrictWrite());
-    }
-    else
-    {
-      $output->writeMessageBegin('getUserById', TMessageType::REPLY, $seqid);
-      $result->write($output);
-      $output->writeMessageEnd();
-      $output->getTransport()->flush();
-    }
-  }
   protected function process_getUserByName($seqid, $input, $output) {
     $args = new \Authority\AuthorityService_getUserByName_args();
     $args->read($input);
@@ -5835,7 +8333,7 @@ class AuthorityServiceProcessor {
     $args->read($input);
     $input->readMessageEnd();
     $result = new \Authority\AuthorityService_getUsers_result();
-    $result->success = $this->handler_->getUsers($args->page, $args->pagesize);
+    $result->success = $this->handler_->getUsers($args->search);
     $bin_accel = ($output instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_write_binary');
     if ($bin_accel)
     {
@@ -5844,6 +8342,63 @@ class AuthorityServiceProcessor {
     else
     {
       $output->writeMessageBegin('getUsers', TMessageType::REPLY, $seqid);
+      $result->write($output);
+      $output->writeMessageEnd();
+      $output->getTransport()->flush();
+    }
+  }
+  protected function process_getUserById($seqid, $input, $output) {
+    $args = new \Authority\AuthorityService_getUserById_args();
+    $args->read($input);
+    $input->readMessageEnd();
+    $result = new \Authority\AuthorityService_getUserById_result();
+    $result->success = $this->handler_->getUserById($args->user_id, $args->rlat);
+    $bin_accel = ($output instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($output, 'getUserById', TMessageType::REPLY, $result, $seqid, $output->isStrictWrite());
+    }
+    else
+    {
+      $output->writeMessageBegin('getUserById', TMessageType::REPLY, $seqid);
+      $result->write($output);
+      $output->writeMessageEnd();
+      $output->getTransport()->flush();
+    }
+  }
+  protected function process_getAssignableGroup($seqid, $input, $output) {
+    $args = new \Authority\AuthorityService_getAssignableGroup_args();
+    $args->read($input);
+    $input->readMessageEnd();
+    $result = new \Authority\AuthorityService_getAssignableGroup_result();
+    $result->success = $this->handler_->getAssignableGroup($args->user_id);
+    $bin_accel = ($output instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($output, 'getAssignableGroup', TMessageType::REPLY, $result, $seqid, $output->isStrictWrite());
+    }
+    else
+    {
+      $output->writeMessageBegin('getAssignableGroup', TMessageType::REPLY, $seqid);
+      $result->write($output);
+      $output->writeMessageEnd();
+      $output->getTransport()->flush();
+    }
+  }
+  protected function process_assignGroup2User($seqid, $input, $output) {
+    $args = new \Authority\AuthorityService_assignGroup2User_args();
+    $args->read($input);
+    $input->readMessageEnd();
+    $result = new \Authority\AuthorityService_assignGroup2User_result();
+    $result->success = $this->handler_->assignGroup2User($args->group_ids, $args->user_id);
+    $bin_accel = ($output instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($output, 'assignGroup2User', TMessageType::REPLY, $result, $seqid, $output->isStrictWrite());
+    }
+    else
+    {
+      $output->writeMessageBegin('assignGroup2User', TMessageType::REPLY, $seqid);
       $result->write($output);
       $output->writeMessageEnd();
       $output->getTransport()->flush();
@@ -6044,7 +8599,7 @@ class AuthorityServiceProcessor {
     $args->read($input);
     $input->readMessageEnd();
     $result = new \Authority\AuthorityService_getGroups_result();
-    $result->success = $this->handler_->getGroups($args->type, $args->page, $args->pagesize);
+    $result->success = $this->handler_->getGroups($args->search);
     $bin_accel = ($output instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_write_binary');
     if ($bin_accel)
     {
@@ -6058,77 +8613,20 @@ class AuthorityServiceProcessor {
       $output->getTransport()->flush();
     }
   }
-  protected function process_addRelation($seqid, $input, $output) {
-    $args = new \Authority\AuthorityService_addRelation_args();
+  protected function process_getGroupById($seqid, $input, $output) {
+    $args = new \Authority\AuthorityService_getGroupById_args();
     $args->read($input);
     $input->readMessageEnd();
-    $result = new \Authority\AuthorityService_addRelation_result();
-    $result->success = $this->handler_->addRelation($args->parent, $args->child);
+    $result = new \Authority\AuthorityService_getGroupById_result();
+    $result->success = $this->handler_->getGroupById($args->group_id, $args->rlat);
     $bin_accel = ($output instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_write_binary');
     if ($bin_accel)
     {
-      thrift_protocol_write_binary($output, 'addRelation', TMessageType::REPLY, $result, $seqid, $output->isStrictWrite());
+      thrift_protocol_write_binary($output, 'getGroupById', TMessageType::REPLY, $result, $seqid, $output->isStrictWrite());
     }
     else
     {
-      $output->writeMessageBegin('addRelation', TMessageType::REPLY, $seqid);
-      $result->write($output);
-      $output->writeMessageEnd();
-      $output->getTransport()->flush();
-    }
-  }
-  protected function process_rmRelation($seqid, $input, $output) {
-    $args = new \Authority\AuthorityService_rmRelation_args();
-    $args->read($input);
-    $input->readMessageEnd();
-    $result = new \Authority\AuthorityService_rmRelation_result();
-    $result->success = $this->handler_->rmRelation($args->parent, $args->child);
-    $bin_accel = ($output instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_write_binary');
-    if ($bin_accel)
-    {
-      thrift_protocol_write_binary($output, 'rmRelation', TMessageType::REPLY, $result, $seqid, $output->isStrictWrite());
-    }
-    else
-    {
-      $output->writeMessageBegin('rmRelation', TMessageType::REPLY, $seqid);
-      $result->write($output);
-      $output->writeMessageEnd();
-      $output->getTransport()->flush();
-    }
-  }
-  protected function process_getAssignableGroup($seqid, $input, $output) {
-    $args = new \Authority\AuthorityService_getAssignableGroup_args();
-    $args->read($input);
-    $input->readMessageEnd();
-    $result = new \Authority\AuthorityService_getAssignableGroup_result();
-    $result->success = $this->handler_->getAssignableGroup($args->uid);
-    $bin_accel = ($output instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_write_binary');
-    if ($bin_accel)
-    {
-      thrift_protocol_write_binary($output, 'getAssignableGroup', TMessageType::REPLY, $result, $seqid, $output->isStrictWrite());
-    }
-    else
-    {
-      $output->writeMessageBegin('getAssignableGroup', TMessageType::REPLY, $seqid);
-      $result->write($output);
-      $output->writeMessageEnd();
-      $output->getTransport()->flush();
-    }
-  }
-  protected function process_getGroupPointById($seqid, $input, $output) {
-    $args = new \Authority\AuthorityService_getGroupPointById_args();
-    $args->read($input);
-    $input->readMessageEnd();
-    $result = new \Authority\AuthorityService_getGroupPointById_result();
-    $result->success = $this->handler_->getGroupPointById($args->group_id);
-    $bin_accel = ($output instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_write_binary');
-    if ($bin_accel)
-    {
-      thrift_protocol_write_binary($output, 'getGroupPointById', TMessageType::REPLY, $result, $seqid, $output->isStrictWrite());
-    }
-    else
-    {
-      $output->writeMessageBegin('getGroupPointById', TMessageType::REPLY, $seqid);
+      $output->writeMessageBegin('getGroupById', TMessageType::REPLY, $seqid);
       $result->write($output);
       $output->writeMessageEnd();
       $output->getTransport()->flush();
@@ -6172,20 +8670,229 @@ class AuthorityServiceProcessor {
       $output->getTransport()->flush();
     }
   }
-  protected function process_assignGroup2User($seqid, $input, $output) {
-    $args = new \Authority\AuthorityService_assignGroup2User_args();
+  protected function process_addRelation($seqid, $input, $output) {
+    $args = new \Authority\AuthorityService_addRelation_args();
     $args->read($input);
     $input->readMessageEnd();
-    $result = new \Authority\AuthorityService_assignGroup2User_result();
-    $result->success = $this->handler_->assignGroup2User($args->group_ids, $args->user_id);
+    $result = new \Authority\AuthorityService_addRelation_result();
+    $result->success = $this->handler_->addRelation($args->parent, $args->child);
     $bin_accel = ($output instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_write_binary');
     if ($bin_accel)
     {
-      thrift_protocol_write_binary($output, 'assignGroup2User', TMessageType::REPLY, $result, $seqid, $output->isStrictWrite());
+      thrift_protocol_write_binary($output, 'addRelation', TMessageType::REPLY, $result, $seqid, $output->isStrictWrite());
     }
     else
     {
-      $output->writeMessageBegin('assignGroup2User', TMessageType::REPLY, $seqid);
+      $output->writeMessageBegin('addRelation', TMessageType::REPLY, $seqid);
+      $result->write($output);
+      $output->writeMessageEnd();
+      $output->getTransport()->flush();
+    }
+  }
+  protected function process_rmRelation($seqid, $input, $output) {
+    $args = new \Authority\AuthorityService_rmRelation_args();
+    $args->read($input);
+    $input->readMessageEnd();
+    $result = new \Authority\AuthorityService_rmRelation_result();
+    $result->success = $this->handler_->rmRelation($args->parent, $args->child);
+    $bin_accel = ($output instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($output, 'rmRelation', TMessageType::REPLY, $result, $seqid, $output->isStrictWrite());
+    }
+    else
+    {
+      $output->writeMessageBegin('rmRelation', TMessageType::REPLY, $seqid);
+      $result->write($output);
+      $output->writeMessageEnd();
+      $output->getTransport()->flush();
+    }
+  }
+  protected function process_addResourceAttr($seqid, $input, $output) {
+    $args = new \Authority\AuthorityService_addResourceAttr_args();
+    $args->read($input);
+    $input->readMessageEnd();
+    $result = new \Authority\AuthorityService_addResourceAttr_result();
+    $result->success = $this->handler_->addResourceAttr($args->resource_attr);
+    $bin_accel = ($output instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($output, 'addResourceAttr', TMessageType::REPLY, $result, $seqid, $output->isStrictWrite());
+    }
+    else
+    {
+      $output->writeMessageBegin('addResourceAttr', TMessageType::REPLY, $seqid);
+      $result->write($output);
+      $output->writeMessageEnd();
+      $output->getTransport()->flush();
+    }
+  }
+  protected function process_rmResourceAttr($seqid, $input, $output) {
+    $args = new \Authority\AuthorityService_rmResourceAttr_args();
+    $args->read($input);
+    $input->readMessageEnd();
+    $result = new \Authority\AuthorityService_rmResourceAttr_result();
+    $result->success = $this->handler_->rmResourceAttr($args->resource_attr_id);
+    $bin_accel = ($output instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($output, 'rmResourceAttr', TMessageType::REPLY, $result, $seqid, $output->isStrictWrite());
+    }
+    else
+    {
+      $output->writeMessageBegin('rmResourceAttr', TMessageType::REPLY, $seqid);
+      $result->write($output);
+      $output->writeMessageEnd();
+      $output->getTransport()->flush();
+    }
+  }
+  protected function process_updateResourceAttr($seqid, $input, $output) {
+    $args = new \Authority\AuthorityService_updateResourceAttr_args();
+    $args->read($input);
+    $input->readMessageEnd();
+    $result = new \Authority\AuthorityService_updateResourceAttr_result();
+    $result->success = $this->handler_->updateResourceAttr($args->resource_attr_id, $args->resource_attr);
+    $bin_accel = ($output instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($output, 'updateResourceAttr', TMessageType::REPLY, $result, $seqid, $output->isStrictWrite());
+    }
+    else
+    {
+      $output->writeMessageBegin('updateResourceAttr', TMessageType::REPLY, $seqid);
+      $result->write($output);
+      $output->writeMessageEnd();
+      $output->getTransport()->flush();
+    }
+  }
+  protected function process_getResourceAttrs($seqid, $input, $output) {
+    $args = new \Authority\AuthorityService_getResourceAttrs_args();
+    $args->read($input);
+    $input->readMessageEnd();
+    $result = new \Authority\AuthorityService_getResourceAttrs_result();
+    $result->success = $this->handler_->getResourceAttrs($args->search);
+    $bin_accel = ($output instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($output, 'getResourceAttrs', TMessageType::REPLY, $result, $seqid, $output->isStrictWrite());
+    }
+    else
+    {
+      $output->writeMessageBegin('getResourceAttrs', TMessageType::REPLY, $seqid);
+      $result->write($output);
+      $output->writeMessageEnd();
+      $output->getTransport()->flush();
+    }
+  }
+  protected function process_addRole($seqid, $input, $output) {
+    $args = new \Authority\AuthorityService_addRole_args();
+    $args->read($input);
+    $input->readMessageEnd();
+    $result = new \Authority\AuthorityService_addRole_result();
+    $result->success = $this->handler_->addRole($args->role);
+    $bin_accel = ($output instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($output, 'addRole', TMessageType::REPLY, $result, $seqid, $output->isStrictWrite());
+    }
+    else
+    {
+      $output->writeMessageBegin('addRole', TMessageType::REPLY, $seqid);
+      $result->write($output);
+      $output->writeMessageEnd();
+      $output->getTransport()->flush();
+    }
+  }
+  protected function process_rmRole($seqid, $input, $output) {
+    $args = new \Authority\AuthorityService_rmRole_args();
+    $args->read($input);
+    $input->readMessageEnd();
+    $result = new \Authority\AuthorityService_rmRole_result();
+    $result->success = $this->handler_->rmRole($args->role_id);
+    $bin_accel = ($output instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($output, 'rmRole', TMessageType::REPLY, $result, $seqid, $output->isStrictWrite());
+    }
+    else
+    {
+      $output->writeMessageBegin('rmRole', TMessageType::REPLY, $seqid);
+      $result->write($output);
+      $output->writeMessageEnd();
+      $output->getTransport()->flush();
+    }
+  }
+  protected function process_updateRole($seqid, $input, $output) {
+    $args = new \Authority\AuthorityService_updateRole_args();
+    $args->read($input);
+    $input->readMessageEnd();
+    $result = new \Authority\AuthorityService_updateRole_result();
+    $result->success = $this->handler_->updateRole($args->role_id, $args->role);
+    $bin_accel = ($output instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($output, 'updateRole', TMessageType::REPLY, $result, $seqid, $output->isStrictWrite());
+    }
+    else
+    {
+      $output->writeMessageBegin('updateRole', TMessageType::REPLY, $seqid);
+      $result->write($output);
+      $output->writeMessageEnd();
+      $output->getTransport()->flush();
+    }
+  }
+  protected function process_getRoles($seqid, $input, $output) {
+    $args = new \Authority\AuthorityService_getRoles_args();
+    $args->read($input);
+    $input->readMessageEnd();
+    $result = new \Authority\AuthorityService_getRoles_result();
+    $result->success = $this->handler_->getRoles($args->search);
+    $bin_accel = ($output instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($output, 'getRoles', TMessageType::REPLY, $result, $seqid, $output->isStrictWrite());
+    }
+    else
+    {
+      $output->writeMessageBegin('getRoles', TMessageType::REPLY, $seqid);
+      $result->write($output);
+      $output->writeMessageEnd();
+      $output->getTransport()->flush();
+    }
+  }
+  protected function process_addRoleMember($seqid, $input, $output) {
+    $args = new \Authority\AuthorityService_addRoleMember_args();
+    $args->read($input);
+    $input->readMessageEnd();
+    $result = new \Authority\AuthorityService_addRoleMember_result();
+    $result->success = $this->handler_->addRoleMember($args->role_id, $args->user_id);
+    $bin_accel = ($output instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($output, 'addRoleMember', TMessageType::REPLY, $result, $seqid, $output->isStrictWrite());
+    }
+    else
+    {
+      $output->writeMessageBegin('addRoleMember', TMessageType::REPLY, $seqid);
+      $result->write($output);
+      $output->writeMessageEnd();
+      $output->getTransport()->flush();
+    }
+  }
+  protected function process_rmRoleMember($seqid, $input, $output) {
+    $args = new \Authority\AuthorityService_rmRoleMember_args();
+    $args->read($input);
+    $input->readMessageEnd();
+    $result = new \Authority\AuthorityService_rmRoleMember_result();
+    $result->success = $this->handler_->rmRoleMember($args->role_id, $args->user_id);
+    $bin_accel = ($output instanceof TBinaryProtocolAccelerated) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($output, 'rmRoleMember', TMessageType::REPLY, $result, $seqid, $output->isStrictWrite());
+    }
+    else
+    {
+      $output->writeMessageBegin('rmRoleMember', TMessageType::REPLY, $seqid);
       $result->write($output);
       $output->writeMessageEnd();
       $output->getTransport()->flush();

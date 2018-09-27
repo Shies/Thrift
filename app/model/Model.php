@@ -20,9 +20,7 @@ class Model
             $this->_table = strtolower(get_called_class());
         }
 
-        if (!$this->PDOPing(\ORM::get_db($this->_database))) {
-            \ORM::set_db(null, $this->_database);
-        }
+        $this->PDOPing(\ORM::get_db($this->_database));
         $this->_instance = \ORM::for_table($this->_table, $this->_database);
     }
 
@@ -32,12 +30,12 @@ class Model
             $conn->getAttribute(\PDO::ATTR_SERVER_INFO);
         } catch (\PDOException $e) {
             if ($e->getCode() == 'HY000') {
+                \ORM::set_db(null, $this->_database);
                 file_put_contents("/tmp/ping.log", $e->getCode().'---'.$e->getMessage());
+            } else {
+                throw $e;
             }
-            return 0;
         }
-
-        return $conn;
     }
 
     public function __get($key)

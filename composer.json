@@ -12,9 +12,12 @@
   "autoload": {
     "classmap": [
       "app/library",
-      "app/model",
-      "engine"
-    ]
+      "app/model"
+    ],
+    "psr-4": {
+      "Swoole\\": "engine/Swoole",
+      "Thrift\\": "engine/Thrift"
+    }
   },
   "scripts": {
     "post-install-cmd": [

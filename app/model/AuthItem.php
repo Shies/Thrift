@@ -86,13 +86,13 @@ class AuthItem extends Model
         return;
     }
 
-    public function deleteItem($item_id)
+    public function deleteItem($id)
     {
         $items = $this->getItems();
-        if (!isset($items[$item_id])) {
+        if (!isset($items[$id])) {
             return false;
         }
-        $item = $items[$item_id];
+        $item = $items[$id];
 
         return $item->delete();
     }

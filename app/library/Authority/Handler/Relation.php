@@ -17,7 +17,7 @@ class RelationHandler
         $ret = new CommonRet();
 
         try {
-            (new \AuthItemChild())->add($parent, $child);
+            (new \AuthItemChild())->create()->set(['parent' => $parent, 'child' => $child])->save();
             $ret->ret = \Constant::RET_OK;
         } catch (\Exception $e) {
             $ret->ret = \Constant::RET_DATA_CONFLICT;
@@ -38,8 +38,15 @@ class RelationHandler
     {
         $ret = new CommonRet();
 
-        $count = (new \AuthItemChild())->remove($parent, $child);
-        $ret->ret = $count ? \Constant::RET_OK : \Constant::RET_DATA_NO_FOUND;
+        $relation = (new \AuthItemChild())
+            ->where(['parent' => $parent, 'child' => $child])
+            ->find_one();
+
+        if ($relation) {
+            $ret->ret = $relation->delete() ? \Constant::RET_OK : \Constant::RET_SYS_ERROR;
+        } else {
+            $ret->ret = \Constant::RET_DATA_NO_FOUND;
+        }
 
         return $ret;
     }
